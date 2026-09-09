@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "Yaalu_Rider",
+    "slug": "Yaalu_Rider",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/yaalu-logo.png",
+    "scheme": "yaalurider",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0B1044",
+        "foregroundImage": "./assets/images/yaalu-logo.png",
+        "backgroundImage": "./assets/images/yaalu-logo.png",
+        "monochromeImage": "./assets/images/yaalu-logo.png"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/images/yaalu-logo.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/yaalu-logo.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#0B1044",
+          "dark": {
+            "backgroundColor": "#0B1044"
+          }
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}
