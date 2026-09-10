@@ -12,7 +12,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import tw from 'twrnc';
+import tw from '@/lib/tw';
 import { YaaluColors } from '@/constants/theme';
 import {
   LocationGraphic,
@@ -67,13 +67,13 @@ export default function OnboardingScreen() {
   const isSuccessPage = currentPage === totalPages - 1;
 
   return (
-    <SafeAreaView style={tw`flex-1 bg-white`} edges={['top', 'bottom']}>
+    <SafeAreaView style={tw`flex-1 bg-[#FFC72C]`} edges={['top', 'bottom']}>
       {/* Top Header Navigation - Hidden on Success Page */}
       {!isSuccessPage && (
-        <View style={tw`h-12 flex-row items-center px-5 justify-between`}>
+        <View style={tw`h-12 flex-row items-center px-5 justify-between bg-[#FFC72C]`}>
           <View />
-          <TouchableOpacity onPress={handleSkip} style={tw`py-1.5 px-3`}>
-            <Text style={tw`text-base font-bold text-[#0B1044]`}>Skip</Text>
+          <TouchableOpacity onPress={handleSkip} style={tw`py-1.5 px-3 bg-white/40 rounded-full`}>
+            <Text style={tw`text-sm font-black text-[#0B1044]`}>Skip</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -331,3 +331,4 @@ export default function OnboardingScreen() {
     </SafeAreaView>
   );
 }
+

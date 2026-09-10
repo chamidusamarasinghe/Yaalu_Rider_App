@@ -11,7 +11,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import tw from 'twrnc';
+import tw from '@/lib/tw';
 import { YaaluColors } from '@/constants/theme';
 import { YaaluLogo } from '@/components/YaaluLogo';
 import { LanguageCard } from '@/components/LanguageCard';
@@ -25,8 +25,8 @@ export default function LanguageSelectScreen() {
   };
 
   return (
-    <SafeAreaView style={tw`flex-1 bg-[#0B1044]`} edges={['top', 'bottom']}>
-      <RNStatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+    <SafeAreaView style={tw`flex-1 bg-[#FFC72C]`} edges={['top', 'bottom']}>
+      <RNStatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
 
       {/* Top Hero Section with Official Delivery Hero Image */}
       <ImageBackground
@@ -97,3 +97,4 @@ export default function LanguageSelectScreen() {
     </SafeAreaView>
   );
 }
+
