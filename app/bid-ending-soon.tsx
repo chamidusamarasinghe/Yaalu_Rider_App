@@ -19,7 +19,7 @@ import {
   FontAwesome5,
   MaterialIcons,
 } from '@expo/vector-icons';
-import tw from 'twrnc';
+import tw from '@/lib/tw';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const TRACK_W = SCREEN_W - 80;
@@ -395,3 +395,4 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
 });
+

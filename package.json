@@ -3,19 +3,16 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
-    "start": "expo start",
+    "start": "expo start --port 8082",
     "reset-project": "node ./scripts/reset-project.js",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web",
+    "android": "expo start --android --port 8082",
+    "ios": "expo start --ios --port 8082",
+    "web": "expo start --web --port 8082",
     "lint": "expo lint"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
     "@react-native-async-storage/async-storage": "2.2.0",
-    "@react-navigation/bottom-tabs": "^7.4.0",
-    "@react-navigation/elements": "^2.6.3",
-    "@react-navigation/native": "^7.1.8",
     "expo": "~57.0.0",
     "expo-constants": "~57.0.17",
     "expo-font": "~57.0.3",
@@ -40,10 +37,11 @@
     "twrnc": "^4.16.0"
   },
   "devDependencies": {
-    "@types/react": "~19.1.0",
+    "@types/react": "^19.0.0",
+    "@types/react-native": "^0.72.8",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
-    "typescript": "~6.0.3"
+    "typescript": "^5.9.2"
   },
   "private": true
 }

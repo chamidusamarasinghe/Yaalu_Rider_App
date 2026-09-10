@@ -10,7 +10,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import tw from 'twrnc';
+import tw from '@/lib/tw';
 
 export default function DeliveryStep3Screen() {
   const router = useRouter();
@@ -175,3 +175,4 @@ export default function DeliveryStep3Screen() {
     </SafeAreaView>
   );
 }
+

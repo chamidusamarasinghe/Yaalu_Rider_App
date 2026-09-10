@@ -3,29 +3,29 @@ import { View, Text, TouchableOpacity, ScrollView, StatusBar as RNStatusBar } fr
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, Feather, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
-import tw from 'twrnc';
+import tw from '@/lib/tw';
 
 export default function LiveBiddingScreen() {
   const router = useRouter();
 
   return (
-    <SafeAreaView style={tw`flex-1 bg-[#F8FAFC]`} edges={['top', 'bottom']}>
-      <RNStatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
+    <SafeAreaView style={tw`flex-1 bg-[#FFC72C]`} edges={['top', 'bottom']}>
+      <RNStatusBar barStyle="dark-content" backgroundColor="#FFC72C" />
       
       {/* Header */}
-      <View style={tw`px-4 py-3 flex-row items-center justify-between bg-white shadow-sm z-10`}>
+      <View style={tw`px-4 py-3 flex-row items-center justify-between bg-[#FFC72C] shadow-sm z-10`}>
         <View style={tw`flex-row items-center`}>
-          <TouchableOpacity onPress={() => router.back()} style={tw`p-2 -ml-2 mr-2`}>
-            <Ionicons name="arrow-back" size={24} color="#0B1044" />
+          <TouchableOpacity onPress={() => router.back()} style={tw`p-2 -ml-2 mr-2 bg-white/40 rounded-full`}>
+            <Ionicons name="arrow-back" size={20} color="#0B1044" />
           </TouchableOpacity>
           <View>
-            <Text style={tw`text-lg font-extrabold text-slate-900`}>Live Bidding</Text>
-            <Text style={tw`text-[11px] text-slate-500`}>Multiple drivers are bidding for this hire.</Text>
+            <Text style={tw`text-lg font-black text-[#0B1044]`}>Live Bidding</Text>
+            <Text style={tw`text-[11px] text-[#0B1044]/70 font-semibold`}>Multiple drivers are bidding for this hire.</Text>
           </View>
         </View>
-        <TouchableOpacity style={tw`p-2`}>
-          <Feather name="bell" size={20} color="#0B1044" />
-          <View style={tw`absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white`} />
+        <TouchableOpacity style={tw`p-2 bg-white/40 rounded-full`}>
+          <Feather name="bell" size={18} color="#0B1044" />
+          <View style={tw`absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white`} />
         </TouchableOpacity>
       </View>
 
@@ -177,3 +177,4 @@ export default function LiveBiddingScreen() {
     </SafeAreaView>
   );
 }
+

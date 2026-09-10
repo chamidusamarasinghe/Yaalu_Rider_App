@@ -10,7 +10,7 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, Feather } from '@expo/vector-icons';
-import tw from 'twrnc';
+import tw from '@/lib/tw';
 
 const MY_BID = 1050;
 const MY_POSITION = 2;
@@ -19,8 +19,8 @@ export default function BidSubmittedScreen() {
   const router = useRouter();
 
   return (
-    <SafeAreaView style={tw`flex-1 bg-[#F8FAFC]`} edges={['top', 'bottom']}>
-      <RNStatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
+    <SafeAreaView style={tw`flex-1 bg-[#FFC72C]`} edges={['top', 'bottom']}>
+      <RNStatusBar barStyle="dark-content" backgroundColor="#FFC72C" />
 
       <ScrollView
         contentContainerStyle={tw`px-5 pb-10`}
@@ -155,3 +155,4 @@ export default function BidSubmittedScreen() {
     </SafeAreaView>
   );
 }
+

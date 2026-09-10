@@ -10,14 +10,14 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, Feather, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
-import tw from 'twrnc';
+import tw from '@/lib/tw';
 
 export default function BidWonScreen() {
   const router = useRouter();
 
   return (
-    <SafeAreaView style={tw`flex-1 bg-[#FFFDF5]`} edges={['top', 'bottom']}>
-      <RNStatusBar barStyle="dark-content" backgroundColor="#FFFDF5" />
+    <SafeAreaView style={tw`flex-1 bg-[#FFC72C]`} edges={['top', 'bottom']}>
+      <RNStatusBar barStyle="dark-content" backgroundColor="#FFC72C" />
 
       <ScrollView
         contentContainerStyle={tw`px-5 pb-12`}
@@ -126,3 +126,4 @@ export default function BidWonScreen() {
     </SafeAreaView>
   );
 }
+

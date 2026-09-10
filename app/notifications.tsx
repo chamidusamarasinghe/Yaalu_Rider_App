@@ -10,7 +10,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import tw from 'twrnc';
+import tw from '@/lib/tw';
 
 interface NotificationItem {
   id: string;
@@ -248,3 +248,4 @@ export default function NotificationsScreen() {
     </SafeAreaView>
   );
 }
+

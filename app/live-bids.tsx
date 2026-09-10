@@ -10,7 +10,7 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-import tw from 'twrnc';
+import tw from '@/lib/tw';
 
 const MY_POSITION = 2;
 
@@ -28,22 +28,23 @@ export default function LiveBidsScreen() {
   const router = useRouter();
 
   return (
-    <SafeAreaView style={tw`flex-1 bg-[#F8FAFC]`} edges={['top', 'bottom']}>
-      <RNStatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
+    <SafeAreaView style={tw`flex-1 bg-[#FFC72C]`} edges={['top', 'bottom']}>
+      <RNStatusBar barStyle="dark-content" backgroundColor="#FFC72C" />
 
       {/* Header */}
-      <View style={tw`px-5 py-4 items-center`}>
-        <Text style={tw`text-2xl font-extrabold text-slate-900 mb-1`}>Live Bids</Text>
-        <View style={tw`flex-row items-center`}>
-          <Feather name="clock" size={12} color="#64748B" style={tw`mr-1`} />
-          <Text style={tw`text-xs font-semibold text-slate-500`}>05:12 Remaining</Text>
+      <View style={tw`bg-[#FFC72C] px-5 py-4 items-center`}>
+        <Text style={tw`text-2xl font-black text-[#0B1044] mb-1`}>Live Bids</Text>
+        <View style={tw`flex-row items-center bg-[#0B1044]/10 px-3 py-1 rounded-full`}>
+          <Feather name="clock" size={12} color="#0B1044" style={tw`mr-1`} />
+          <Text style={tw`text-xs font-bold text-[#0B1044]`}>05:12 Remaining</Text>
         </View>
       </View>
 
-      <ScrollView
-        contentContainerStyle={tw`px-4 pb-40`}
-        showsVerticalScrollIndicator={false}
-      >
+      <View style={tw`flex-1 bg-[#F8FAFC] rounded-t-3xl pt-5`}>
+        <ScrollView
+          contentContainerStyle={tw`px-4 pb-40`}
+          showsVerticalScrollIndicator={false}
+        >
         {/* Bidder rows */}
         <View style={tw`gap-3`}>
           {BIDDERS.map((bidder) => (
@@ -176,7 +177,9 @@ export default function LiveBidsScreen() {
           Lowest valid bid wins when the timer reaches zero.
         </Text>
       </View>
+      </View>
     </SafeAreaView>
   );
 }
+
 

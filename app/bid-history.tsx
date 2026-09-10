@@ -9,7 +9,7 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, Feather } from '@expo/vector-icons';
-import tw from 'twrnc';
+import tw from '@/lib/tw';
 
 type TabType = 'All' | 'Won' | 'Lost';
 
@@ -88,12 +88,12 @@ export default function BidHistoryScreen() {
   const tabs: TabType[] = ['All', 'Won', 'Lost'];
 
   return (
-    <SafeAreaView style={tw`flex-1 bg-[#F8FAFC]`} edges={['top', 'bottom']}>
-      <RNStatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
+    <SafeAreaView style={tw`flex-1 bg-[#FFC72C]`} edges={['top', 'bottom']}>
+      <RNStatusBar barStyle="dark-content" backgroundColor="#FFC72C" />
 
       {/* Header */}
-      <View style={tw`px-5 pt-4 pb-2 items-center`}>
-        <Text style={tw`text-2xl font-extrabold text-slate-900`}>Bid History</Text>
+      <View style={tw`bg-[#FFC72C] px-5 pt-4 pb-3 items-center shadow-xs`}>
+        <Text style={tw`text-2xl font-black text-[#0B1044]`}>Bid History</Text>
       </View>
 
       {/* Stats Row */}
@@ -226,3 +226,4 @@ export default function BidHistoryScreen() {
     </SafeAreaView>
   );
 }
+

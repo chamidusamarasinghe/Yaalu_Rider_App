@@ -10,14 +10,14 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-import tw from 'twrnc';
+import tw from '@/lib/tw';
 
 export default function BidLostScreen() {
   const router = useRouter();
 
   return (
-    <SafeAreaView style={tw`flex-1 bg-[#FAFAFA]`} edges={['top', 'bottom']}>
-      <RNStatusBar barStyle="dark-content" backgroundColor="#FAFAFA" />
+    <SafeAreaView style={tw`flex-1 bg-[#FFC72C]`} edges={['top', 'bottom']}>
+      <RNStatusBar barStyle="dark-content" backgroundColor="#FFC72C" />
 
       <ScrollView
         contentContainerStyle={tw`px-5 pb-10`}
@@ -96,3 +96,4 @@ export default function BidLostScreen() {
     </SafeAreaView>
   );
 }
+

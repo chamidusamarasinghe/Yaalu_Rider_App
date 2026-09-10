@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 export const YaaluColors = {
   navy: '#0B1044',
   navyDark: '#060826',
+  yellow: '#FFC72C',
   gold: '#FFC72C',
   goldDark: '#D9A100',
   goldLight: '#FFF4CE',

@@ -12,7 +12,7 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, Feather } from '@expo/vector-icons';
-import tw from 'twrnc';
+import tw from '@/lib/tw';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const TRACK_PADDING = 20;
@@ -63,17 +63,17 @@ export default function PlaceBidScreen() {
   const badgeText = bid <= STARTING_PRICE ? '#065F46' : '#92400E';
 
   return (
-    <SafeAreaView style={tw`flex-1 bg-white`} edges={['top', 'bottom']}>
-      <RNStatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+    <SafeAreaView style={tw`flex-1 bg-[#FFC72C]`} edges={['top', 'bottom']}>
+      <RNStatusBar barStyle="dark-content" backgroundColor="#FFC72C" />
 
       {/* Header */}
-      <View style={tw`px-5 pt-3 pb-2 flex-row items-center justify-between`}>
-        <TouchableOpacity onPress={() => router.back()} style={tw`p-1`}>
-          <Ionicons name="close" size={24} color="#0B1044" />
+      <View style={tw`bg-[#FFC72C] px-5 pt-3 pb-3 flex-row items-center justify-between`}>
+        <TouchableOpacity onPress={() => router.back()} style={tw`w-9 h-9 rounded-full bg-white/40 items-center justify-center`}>
+          <Ionicons name="close" size={22} color="#0B1044" />
         </TouchableOpacity>
-        <Text style={tw`text-base font-extrabold text-slate-900`}>Place Your Bid</Text>
-        <TouchableOpacity style={tw`p-1`}>
-          <Feather name="info" size={20} color="#64748B" />
+        <Text style={tw`text-base font-extrabold text-[#0B1044]`}>Place Your Bid</Text>
+        <TouchableOpacity style={tw`w-9 h-9 rounded-full bg-white/40 items-center justify-center`}>
+          <Feather name="info" size={18} color="#0B1044" />
         </TouchableOpacity>
       </View>
 
@@ -257,3 +257,4 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
 });
+
