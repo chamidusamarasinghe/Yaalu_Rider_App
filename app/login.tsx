@@ -7,19 +7,39 @@ import {
   ScrollView,
   StatusBar as RNStatusBar,
   Image,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tw from 'twrnc';
 import { YaaluLogo } from '@/components/YaaluLogo';
+import riderApi from '@/services/api';
 
 export default function LoginScreen() {
   const router = useRouter();
   const [mobileNumber, setMobileNumber] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSendOTP = () => {
-    router.push('/verify-otp');
+  const handleSendOTP = async () => {
+    const cleaned = mobileNumber.trim().replace(/\s+/g, '');
+    if (cleaned.length < 9) {
+      Alert.alert('Invalid Number', 'Please enter a valid mobile number.');
+      return;
+    }
+    const fullNumber = '+94' + cleaned.replace(/^0/, '');
+    try {
+      setLoading(true);
+      await riderApi.sendOtp(fullNumber);
+      router.push({ pathname: '/verify-otp', params: { mobile: fullNumber } } as any);
+    } catch (err: any) {
+      // If backend not reachable, allow dev navigation
+      console.warn('OTP send error:', err.message);
+      router.push({ pathname: '/verify-otp', params: { mobile: fullNumber } } as any);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -92,9 +112,16 @@ export default function LoginScreen() {
           <TouchableOpacity
             activeOpacity={0.85}
             style={tw`flex-row items-center justify-center bg-[#070A2A] rounded-xl py-4 gap-2 shadow-md`}
-            onPress={handleSendOTP}>
-            <Text style={tw`text-base font-bold text-white`}>Send OTP</Text>
-            <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+            onPress={handleSendOTP}
+            disabled={loading}>
+            {loading ? (
+              <ActivityIndicator color="#FFC72C" />
+            ) : (
+              <>
+                <Text style={tw`text-base font-bold text-white`}>Send OTP</Text>
+                <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+              </>
+            )}
           </TouchableOpacity>
 
           {/* OR Divider */}

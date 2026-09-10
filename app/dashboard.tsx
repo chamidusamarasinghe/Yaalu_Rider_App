@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Text,
   View,
@@ -6,15 +6,72 @@ import {
   ScrollView,
   StatusBar as RNStatusBar,
   Image,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons, Feather, FontAwesome5 } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tw from 'twrnc';
+import riderApi, { getSavedRider } from '@/services/api';
 
 export default function RiderDashboardScreen() {
   const router = useRouter();
-  const [isOnline, setIsOnline] = useState(true);
+  const [isOnline, setIsOnline] = useState(false);
+  const [rider, setRider] = useState<any>(null);
+  const [earnings, setEarnings] = useState<any>(null);
+  const [availableCount, setAvailableCount] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadData = useCallback(async () => {
+    try {
+      // Load cached rider immediately for fast render
+      const cached = await getSavedRider();
+      if (cached) setRider(cached);
+
+      // Then fetch fresh data in parallel
+      const [profileRes, earningsRes, ordersRes] = await Promise.allSettled([
+        riderApi.getProfile(),
+        riderApi.getEarnings('daily'),
+        riderApi.getAvailableOrders(),
+      ]);
+
+      if (profileRes.status === 'fulfilled') {
+        const p = profileRes.value as any;
+        setRider(p.rider);
+        setIsOnline(p.rider?.status === 'AVAILABLE');
+      }
+      if (earningsRes.status === 'fulfilled') {
+        setEarnings(earningsRes.value);
+      }
+      if (ordersRes.status === 'fulfilled') {
+        setAvailableCount((ordersRes.value as any[]).length);
+      }
+    } catch (e) {
+      console.warn('Dashboard load error:', e);
+    }
+  }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  };
+
+  const toggleOnline = async () => {
+    const newStatus = isOnline ? 'OFFLINE' : 'AVAILABLE';
+    setIsOnline(!isOnline);
+    try {
+      await riderApi.setStatus(newStatus);
+    } catch (e) {
+      // Revert if failed
+      setIsOnline(isOnline);
+    }
+  };
+
+
 
   return (
     <SafeAreaView style={tw`flex-1 bg-[#FFC72C]`} edges={['top', 'bottom']}>
@@ -37,7 +94,7 @@ export default function RiderDashboardScreen() {
           {/* Online / Offline Toggle Pill */}
           <TouchableOpacity
             activeOpacity={0.8}
-            onPress={() => setIsOnline(!isOnline)}
+            onPress={toggleOnline}
             style={tw`flex-row items-center bg-slate-900 px-3.5 py-1.5 rounded-full border border-slate-700 shadow-md gap-2`}>
             <View style={tw`w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-emerald-400' : 'bg-slate-500'}`} />
             <Text style={tw`text-xs font-black text-white uppercase tracking-wider`}>
@@ -55,18 +112,25 @@ export default function RiderDashboardScreen() {
           </TouchableOpacity>
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={tw`p-4 pb-24`}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={tw`p-4 pb-24`}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFC72C" />}>
           {/* Earnings Card */}
           <View style={tw`bg-[#0B1044] rounded-3xl p-5 shadow-xl mb-4 relative overflow-hidden`}>
             <View style={tw`flex-row justify-between items-center mb-2`}>
               <Text style={tw`text-xs font-bold text-slate-300 uppercase tracking-widest`}>Today's Earnings</Text>
               <View style={tw`bg-emerald-500/20 border border-emerald-400/30 px-2.5 py-0.5 rounded-full`}>
-                <Text style={tw`text-[10px] font-black text-emerald-300`}>+18.4% vs yesterday</Text>
+                <Text style={tw`text-[10px] font-black text-emerald-300`}>
+                  {rider ? `Hello, ${rider.vehicleType || 'Rider'}` : 'Loading...'}
+                </Text>
               </View>
             </View>
 
-            <Text style={tw`text-3xl font-black text-white`}>LKR 4,250.00</Text>
-            <Text style={tw`text-xs text-slate-400 mt-1`}>14 Completed Deliveries • 6.2 hrs online</Text>
+            <Text style={tw`text-3xl font-black text-white`}>
+              LKR {earnings ? earnings.totalEarnings.toLocaleString('en-LK', { minimumFractionDigits: 2 }) : '0.00'}
+            </Text>
+            <Text style={tw`text-xs text-slate-400 mt-1`}>
+              {earnings ? `${earnings.totalDeliveries} Deliveries today` : 'Loading earnings...'}
+            </Text>
 
             {/* Quick Action Button */}
             <TouchableOpacity
@@ -88,8 +152,10 @@ export default function RiderDashboardScreen() {
                 <Ionicons name="flash" size={20} color="#FFC72C" />
               </View>
               <View>
-                <Text style={tw`text-sm font-black text-[#0B1044]`}>3 New Requests Nearby!</Text>
-                <Text style={tw`text-xs font-semibold text-slate-800`}>Highest fare: LKR 650 • 2.4 km</Text>
+                <Text style={tw`text-sm font-black text-[#0B1044]`}>
+                  {availableCount > 0 ? `${availableCount} New Request${availableCount !== 1 ? 's' : ''} Available!` : 'No Requests Right Now'}
+                </Text>
+                <Text style={tw`text-xs font-semibold text-slate-800`}>Tap to view available hires</Text>
               </View>
             </View>
             <View style={tw`bg-[#0B1044] px-3 py-1.5 rounded-lg`}>
