@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tw from '@/lib/tw';
+import riderApi from '@/services/api';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -31,7 +32,10 @@ export default function SettingsScreen() {
       {
         text: 'Logout',
         style: 'destructive',
-        onPress: () => router.push('/login'),
+        onPress: async () => {
+          await riderApi.logout();
+          router.replace('/login');
+        },
       },
     ]);
   };
