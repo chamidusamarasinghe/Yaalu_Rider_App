@@ -596,10 +596,7 @@ export const fareApi = {
    */
   calculateFare: async (distanceKm: number, vehicleType: string = 'THREE_WHEEL') => {
     try {
-      const res = await apiRequest('/deliveries/calculate-fare', {
-        method: 'POST',
-        body: JSON.stringify({ distanceKm, vehicleType }),
-      });
+      const res = await request<any>('POST', '/deliveries/calculate-fare', { distanceKm, vehicleType }, false);
       return res;
     } catch (err) {
       console.warn('Live fare calculation fallback to standard formula:', err);
@@ -634,7 +631,7 @@ export const fareApi = {
    */
   getFareRates: async () => {
     try {
-      return await apiRequest('/deliveries/fare-rates');
+      return await request<any[]>('GET', '/deliveries/fare-rates', undefined, false);
     } catch (err) {
       console.warn('Failed to load live fare rates:', err);
       return [];

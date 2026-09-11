@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Text,
   View,
@@ -62,6 +62,21 @@ export default function NewRequestsScreen() {
       console.warn('Could not load dynamic fare in new requests:', err);
     }
   };
+
+  useEffect(() => {
+    if (bidTrip.timeoutSeconds <= 0) return;
+    const interval = setInterval(() => {
+      setBidTrip((prev) => {
+        if (prev.timeoutSeconds <= 1) {
+          clearInterval(interval);
+          return { ...prev, timeoutSeconds: 0 };
+        }
+        return { ...prev, timeoutSeconds: prev.timeoutSeconds - 1 };
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [bidTrip.timeoutSeconds]);
 
   return (
     <SafeAreaView style={tw`flex-1 bg-[#FFC72C]`} edges={['top', 'bottom']}>
@@ -304,7 +319,15 @@ export default function NewRequestsScreen() {
 
             <TouchableOpacity
               activeOpacity={0.85}
-              onPress={() => router.push('/bid-request' as any)}
+              onPress={() => router.push({
+                pathname: '/bid-request',
+                params: {
+                  secondsLeft: bidTrip.timeoutSeconds.toString(),
+                  startingPrice: bidTrip.startingPrice.toString(),
+                  minBid: bidTrip.minBid.toString(),
+                  maxBid: bidTrip.maxBid.toString(),
+                },
+              } as any)}
               style={tw`bg-[#FFC72C] rounded-2xl py-3.5 flex-row items-center justify-center shadow-md`}>
               <Text style={tw`text-slate-900 font-extrabold text-sm`}>View Request</Text>
             </TouchableOpacity>

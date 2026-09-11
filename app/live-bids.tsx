@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,7 @@ import {
   StatusBar as RNStatusBar,
   StyleSheet,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import tw from '@/lib/tw';
@@ -26,18 +26,47 @@ const LOWEST_BID = 950;
 
 export default function LiveBidsScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
+
+  const [secondsLeft, setSecondsLeft] = useState(
+    params.secondsLeft ? Number(params.secondsLeft) : 100
+  );
+
+  useEffect(() => {
+    if (secondsLeft <= 0) return;
+    const timer = setInterval(() => {
+      setSecondsLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [secondsLeft]);
+
+  const mm = Math.floor(secondsLeft / 60).toString().padStart(2, '0');
+  const ss = (secondsLeft % 60).toString().padStart(2, '0');
 
   return (
     <SafeAreaView style={tw`flex-1 bg-[#FFC72C]`} edges={['top', 'bottom']}>
       <RNStatusBar barStyle="dark-content" backgroundColor="#FFC72C" />
 
       {/* Header */}
-      <View style={tw`bg-[#FFC72C] px-5 py-4 items-center`}>
-        <Text style={tw`text-2xl font-black text-[#0B1044] mb-1`}>Live Bids</Text>
-        <View style={tw`flex-row items-center bg-[#0B1044]/10 px-3 py-1 rounded-full`}>
-          <Feather name="clock" size={12} color="#0B1044" style={tw`mr-1`} />
-          <Text style={tw`text-xs font-bold text-[#0B1044]`}>05:12 Remaining</Text>
+      <View style={tw`bg-[#FFC72C] px-4 py-3 flex-row items-center justify-between`}>
+        <TouchableOpacity onPress={() => router.back()} style={tw`p-2 bg-white/40 rounded-full`}>
+          <Ionicons name="arrow-back" size={20} color="#0B1044" />
+        </TouchableOpacity>
+        <View style={tw`items-center`}>
+          <Text style={tw`text-xl font-black text-[#0B1044]`}>Live Bids</Text>
+          <View style={tw`flex-row items-center bg-[#0B1044]/10 px-2.5 py-0.5 rounded-full mt-0.5`}>
+            <Feather name="clock" size={11} color="#0B1044" style={tw`mr-1`} />
+            <Text style={tw`text-[11px] font-bold text-[#0B1044]`}>{mm}:{ss} Remaining</Text>
+          </View>
         </View>
+        <View style={tw`w-9`} />
       </View>
 
       <View style={tw`flex-1 bg-[#F8FAFC] rounded-t-3xl pt-5`}>

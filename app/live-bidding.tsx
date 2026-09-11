@@ -1,12 +1,73 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StatusBar as RNStatusBar } from 'react-native';
-import { useRouter } from 'expo-router';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, StatusBar as RNStatusBar, Alert } from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, Feather, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import tw from '@/lib/tw';
 
 export default function LiveBiddingScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
+
+  const [secondsLeft, setSecondsLeft] = useState(
+    params.secondsLeft ? Number(params.secondsLeft) : 120
+  );
+  const [startingPrice, setStartingPrice] = useState(
+    params.startingPrice ? Number(params.startingPrice) : 1000
+  );
+  const [minBid, setMinBid] = useState(
+    params.minBid ? Number(params.minBid) : 900
+  );
+  const [maxBid, setMaxBid] = useState(
+    params.maxBid ? Number(params.maxBid) : 1200
+  );
+  const [lowestBid, setLowestBid] = useState(980);
+
+  useEffect(() => {
+    if (secondsLeft <= 0) return;
+    const timer = setInterval(() => {
+      setSecondsLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [secondsLeft]);
+
+  const mm = Math.floor(secondsLeft / 60).toString().padStart(2, '0');
+  const ss = (secondsLeft % 60).toString().padStart(2, '0');
+
+  const handlePlaceBid = () => {
+    if (secondsLeft <= 0) {
+      Alert.alert('Bidding Ended', 'The bidding period for this hire has ended.');
+      return;
+    }
+    router.push({
+      pathname: '/place-bid',
+      params: {
+        startingPrice: startingPrice.toString(),
+        minBid: minBid.toString(),
+        maxBid: maxBid.toString(),
+        secondsLeft: secondsLeft.toString(),
+      },
+    } as any);
+  };
+
+  const handleViewLiveBids = () => {
+    router.push({
+      pathname: '/live-bids',
+      params: {
+        startingPrice: startingPrice.toString(),
+        minBid: minBid.toString(),
+        maxBid: maxBid.toString(),
+        secondsLeft: secondsLeft.toString(),
+      },
+    } as any);
+  };
 
   return (
     <SafeAreaView style={tw`flex-1 bg-[#FFC72C]`} edges={['top', 'bottom']}>
@@ -23,7 +84,9 @@ export default function LiveBiddingScreen() {
             <Text style={tw`text-[11px] text-[#0B1044]/70 font-semibold`}>Multiple drivers are bidding for this hire.</Text>
           </View>
         </View>
-        <TouchableOpacity style={tw`p-2 bg-white/40 rounded-full`}>
+        <TouchableOpacity 
+          onPress={() => router.push('/notifications' as any)}
+          style={tw`p-2 bg-white/40 rounded-full`}>
           <Feather name="bell" size={18} color="#0B1044" />
           <View style={tw`absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white`} />
         </TouchableOpacity>
@@ -34,9 +97,16 @@ export default function LiveBiddingScreen() {
         <View style={tw`bg-white rounded-3xl p-5 mb-4 border border-amber-200 shadow-md`}>
           <View style={tw`flex-row justify-between items-center mb-6`}>
             {/* Timer Circle */}
-            <View style={tw`w-16 h-16 rounded-full border-4 border-amber-400 items-center justify-center`}>
-              <Text style={tw`text-sm font-extrabold text-slate-900`}>08:00</Text>
-              <Text style={tw`text-[8px] text-slate-500 font-bold uppercase`}>Remaining</Text>
+            <View style={[
+              tw`w-18 h-18 rounded-full border-4 items-center justify-center shadow-sm`,
+              secondsLeft < 30 ? tw`border-red-500 bg-red-50` : tw`border-amber-400 bg-amber-50`,
+            ]}>
+              <Text style={[tw`text-base font-black`, secondsLeft < 30 ? tw`text-red-700` : tw`text-slate-900`]}>
+                {mm}:{ss}
+              </Text>
+              <Text style={[tw`text-[8px] font-bold uppercase`, secondsLeft < 30 ? tw`text-red-500` : tw`text-slate-500`]}>
+                {secondsLeft > 0 ? 'Remaining' : 'Ended'}
+              </Text>
             </View>
 
             <View style={tw`flex-1 ml-4`}>
@@ -46,22 +116,22 @@ export default function LiveBiddingScreen() {
                     <Feather name="dollar-sign" size={10} color="#64748B" />
                     <Text style={tw`text-[9px] text-slate-500 uppercase font-bold`}>Starting</Text>
                   </View>
-                  <Text style={tw`text-xs font-extrabold text-slate-900`}>Rs. 1,000</Text>
+                  <Text style={tw`text-xs font-extrabold text-slate-900`}>Rs. {startingPrice.toLocaleString()}</Text>
                 </View>
                 <View style={tw`items-end`}>
                   <View style={tw`flex-row items-center mb-0.5`}>
                     <Ionicons name="swap-vertical" size={10} color="#10B981" />
                     <Text style={tw`text-[9px] text-emerald-600 uppercase font-bold`}>Bid Range</Text>
                   </View>
-                  <Text style={tw`text-xs font-extrabold text-slate-900`}>Rs. 900 - 1,200</Text>
+                  <Text style={tw`text-xs font-extrabold text-slate-900`}>
+                    Rs. {minBid.toLocaleString()} - {maxBid.toLocaleString()}
+                  </Text>
                 </View>
               </View>
               
-              {/* Progress Bar placeholder */}
+              {/* Progress Bar */}
               <View style={tw`h-1.5 bg-slate-100 rounded-full w-full flex-row overflow-hidden`}>
-                <View style={tw`h-full w-[10%] bg-blue-500`} />
-                <View style={tw`h-full w-[30%] bg-emerald-500`} />
-                <View style={tw`h-full w-[20%] bg-amber-400`} />
+                <View style={[tw`h-full bg-amber-400`, { width: `${Math.min(100, Math.max(10, (secondsLeft / 120) * 100))}%` }]} />
               </View>
             </View>
           </View>
@@ -73,10 +143,10 @@ export default function LiveBiddingScreen() {
               </View>
               <View>
                 <Text style={tw`text-[10px] text-emerald-700 uppercase font-bold mb-0.5`}>Current Lowest Bid</Text>
-                <Text style={tw`text-2xl font-extrabold text-emerald-700`}>Rs. 980</Text>
+                <Text style={tw`text-2xl font-extrabold text-emerald-700`}>Rs. {lowestBid.toLocaleString()}</Text>
               </View>
             </View>
-            <View style={tw`bg-white border border-emerald-200 rounded-xl px-2 py-1.5 items-center`}>
+            <View style={tw`bg-white border border-emerald-200 rounded-xl px-2.5 py-1.5 items-center`}>
               <Text style={tw`text-sm font-extrabold text-slate-900`}>4 Drivers</Text>
               <Text style={tw`text-[9px] text-emerald-600 font-bold uppercase`}>Bidding</Text>
             </View>
@@ -85,14 +155,14 @@ export default function LiveBiddingScreen() {
           <View style={tw`flex-row gap-3`}>
             <TouchableOpacity 
               activeOpacity={0.85}
-              onPress={() => router.push('/place-bid' as any)}
+              onPress={handlePlaceBid}
               style={tw`flex-1 bg-[#FFC72C] py-4 rounded-xl flex-row items-center justify-center shadow-md`}>
               <MaterialCommunityIcons name="gavel" size={18} color="#0B1044" style={tw`mr-2`} />
               <Text style={tw`font-extrabold text-base text-[#0B1044]`}>Place Bid</Text>
             </TouchableOpacity>
             <TouchableOpacity
               activeOpacity={0.85}
-              onPress={() => router.push('/live-bids' as any)}
+              onPress={handleViewLiveBids}
               style={tw`flex-1 bg-white border-2 border-[#FFC72C] py-4 rounded-xl flex-row items-center justify-center`}>
               <Feather name="list" size={16} color="#0B1044" style={tw`mr-2`} />
               <Text style={tw`font-extrabold text-base text-slate-900`}>Live Bids</Text>

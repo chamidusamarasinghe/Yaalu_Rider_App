@@ -175,28 +175,26 @@ export default function LiveNavigationScreen() {
       {/* Bottom Navigation Bar */}
       <View style={tw`absolute bottom-0 left-0 right-0 h-16 bg-[#FFC72C] flex-row items-center justify-around border-t border-amber-300 shadow-lg px-2`}>
         <TouchableOpacity onPress={() => router.push('/dashboard')} style={tw`items-center`}>
-          <View style={tw`bg-white px-3 py-1 rounded-full flex-row items-center gap-1`}>
-            <Ionicons name="home" size={18} color="#0B1044" />
-            <Text style={tw`text-xs font-extrabold text-[#0B1044]`}>Home</Text>
-          </View>
+          <Ionicons name="home-outline" size={20} color="#0B1044" />
+          <Text style={tw`text-[10px] font-bold text-[#0B1044]`}>Home</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => router.push('/new-requests')} style={tw`items-center`}>
+        <TouchableOpacity onPress={() => router.push('/orders' as any)} style={tw`items-center`}>
           <Ionicons name="cart-outline" size={20} color="#0B1044" />
           <Text style={tw`text-[10px] font-bold text-[#0B1044]`}>Orders</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={tw`items-center`}>
+        <TouchableOpacity onPress={() => router.push('/wallet' as any)} style={tw`items-center`}>
           <Ionicons name="wallet-outline" size={20} color="#0B1044" />
           <Text style={tw`text-[10px] font-bold text-[#0B1044]`}>Wallet</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={tw`items-center`}>
+        <TouchableOpacity onPress={() => router.push('/notifications' as any)} style={tw`items-center`}>
           <Ionicons name="notifications-outline" size={20} color="#0B1044" />
           <Text style={tw`text-[10px] font-bold text-[#0B1044]`}>Notification</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={tw`items-center`}>
+        <TouchableOpacity onPress={() => router.push('/profile' as any)} style={tw`items-center`}>
           <Ionicons name="person-outline" size={20} color="#0B1044" />
           <Text style={tw`text-[10px] font-bold text-[#0B1044]`}>Profile</Text>
         </TouchableOpacity>

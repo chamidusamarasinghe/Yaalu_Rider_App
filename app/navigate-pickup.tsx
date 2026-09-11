@@ -6,6 +6,7 @@ import {
   StatusBar as RNStatusBar,
   StyleSheet,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -189,6 +190,7 @@ export default function NavigateToPickupScreen() {
         {/* Arrived CTA */}
         <TouchableOpacity
           activeOpacity={0.85}
+          onPress={() => router.push('/delivery/step1' as any)}
           style={[tw`bg-[#FFC72C] py-4 rounded-2xl flex-row items-center justify-center mb-3`, {
             shadowColor: '#FFC72C', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 10, elevation: 6,
           }]}
@@ -200,6 +202,7 @@ export default function NavigateToPickupScreen() {
         {/* Contact */}
         <TouchableOpacity
           activeOpacity={0.85}
+          onPress={() => Alert.alert('Contact Passenger', 'Calling customer at +94 77 123 4567...')}
           style={tw`py-3.5 rounded-2xl border-2 border-slate-200 flex-row items-center justify-center`}
         >
           <Feather name="phone" size={16} color="#475569" style={tw`mr-2`} />

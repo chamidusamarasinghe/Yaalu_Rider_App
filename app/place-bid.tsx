@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   PanResponder,
   Dimensions,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import tw from '@/lib/tw';
@@ -18,26 +18,31 @@ const { width: SCREEN_W } = Dimensions.get('window');
 const TRACK_PADDING = 20;
 const TRACK_W = SCREEN_W - TRACK_PADDING * 2 - 40;
 
-const MIN_BID = 900;
-const MAX_BID = 1200;
-const STARTING_PRICE = 1000;
-
 function clamp(val: number, lo: number, hi: number) {
   return Math.max(lo, Math.min(hi, val));
 }
 
 export default function PlaceBidScreen() {
   const router = useRouter();
-  const [bid, setBid] = useState(1050);
+  const params = useLocalSearchParams();
 
-  const pctFromStart = (((bid - STARTING_PRICE) / STARTING_PRICE) * 100).toFixed(1);
-  const isRecommended = bid >= STARTING_PRICE * 1.04 && bid <= STARTING_PRICE * 1.06;
+  const startingPrice = params.startingPrice ? Number(params.startingPrice) : 1000;
+  const minBid = params.minBid ? Number(params.minBid) : 900;
+  const maxBid = params.maxBid ? Number(params.maxBid) : 1200;
+  const secondsLeft = params.secondsLeft ? Number(params.secondsLeft) : 120;
 
-  const increment = () => setBid((v) => clamp(v + 10, MIN_BID, MAX_BID));
-  const decrement = () => setBid((v) => clamp(v - 10, MIN_BID, MAX_BID));
+  const [bid, setBid] = useState(
+    Math.round((startingPrice * 0.98) / 10) * 10
+  );
+
+  const pctFromStart = (((bid - startingPrice) / startingPrice) * 100).toFixed(1);
+  const isRecommended = bid <= startingPrice;
+
+  const increment = () => setBid((v) => clamp(v + 10, minBid, maxBid));
+  const decrement = () => setBid((v) => clamp(v - 10, minBid, maxBid));
 
   // slider
-  const sliderPct = (bid - MIN_BID) / (MAX_BID - MIN_BID); // 0-1
+  const sliderPct = (bid - minBid) / (maxBid - minBid || 1); // 0-1
   const thumbX = useRef(sliderPct * TRACK_W);
   const startX = useRef(0);
 
@@ -51,16 +56,29 @@ export default function PlaceBidScreen() {
       onPanResponderMove: (_, gs) => {
         const newX = clamp(startX.current + gs.dx, 0, TRACK_W);
         thumbX.current = newX;
-        const raw = MIN_BID + (newX / TRACK_W) * (MAX_BID - MIN_BID);
+        const raw = minBid + (newX / TRACK_W) * (maxBid - minBid);
         const snapped = Math.round(raw / 10) * 10;
-        setBid(clamp(snapped, MIN_BID, MAX_BID));
+        setBid(clamp(snapped, minBid, maxBid));
       },
     })
   ).current;
 
-  const ringColor = bid <= STARTING_PRICE ? '#10B981' : '#F59E0B';
-  const badgeBg = bid <= STARTING_PRICE ? '#D1FAE5' : '#FEF3C7';
-  const badgeText = bid <= STARTING_PRICE ? '#065F46' : '#92400E';
+  const ringColor = bid <= startingPrice ? '#10B981' : '#F59E0B';
+  const badgeBg = bid <= startingPrice ? '#D1FAE5' : '#FEF3C7';
+  const badgeText = bid <= startingPrice ? '#065F46' : '#92400E';
+
+  const handleSubmitBid = () => {
+    router.push({
+      pathname: '/bid-submitted',
+      params: {
+        bid: bid.toString(),
+        startingPrice: startingPrice.toString(),
+        minBid: minBid.toString(),
+        maxBid: maxBid.toString(),
+        secondsLeft: secondsLeft.toString(),
+      },
+    } as any);
+  };
 
   return (
     <SafeAreaView style={tw`flex-1 bg-[#FFC72C]`} edges={['top', 'bottom']}>
@@ -131,7 +149,7 @@ export default function PlaceBidScreen() {
               <Text style={[tw`text-[11px] font-extrabold`, { color: badgeText }]}>
                 {Number(pctFromStart) > 0 ? '+' : ''}
                 {pctFromStart}%{' '}
-                {isRecommended ? 'Recommended' : bid < STARTING_PRICE ? 'Below Start' : 'Above Start'}
+                {isRecommended ? 'Recommended' : bid < startingPrice ? 'Below Start' : 'Above Start'}
               </Text>
             </View>
           </View>
@@ -172,15 +190,15 @@ export default function PlaceBidScreen() {
           <View style={tw`flex-row justify-between mt-3`}>
             <View style={tw`items-center`}>
               <Text style={tw`text-[10px] font-bold text-slate-400`}>Minimum</Text>
-              <Text style={tw`text-xs font-extrabold text-slate-700`}>Rs. 900</Text>
+              <Text style={tw`text-xs font-extrabold text-slate-700`}>Rs. {minBid.toLocaleString()}</Text>
             </View>
             <View style={tw`items-center`}>
               <Text style={tw`text-[10px] font-bold text-slate-400`}>Starting Price</Text>
-              <Text style={tw`text-xs font-extrabold text-slate-700`}>Rs. 1,000</Text>
+              <Text style={tw`text-xs font-extrabold text-slate-700`}>Rs. {startingPrice.toLocaleString()}</Text>
             </View>
             <View style={tw`items-center`}>
               <Text style={tw`text-[10px] font-bold text-slate-400`}>Maximum</Text>
-              <Text style={tw`text-xs font-extrabold text-slate-700`}>Rs. 1,200</Text>
+              <Text style={tw`text-xs font-extrabold text-slate-700`}>Rs. {maxBid.toLocaleString()}</Text>
             </View>
           </View>
         </View>
@@ -197,10 +215,10 @@ export default function PlaceBidScreen() {
         {/* Submit Button */}
         <TouchableOpacity
           activeOpacity={0.85}
-          onPress={() => router.push('/bid-submitted' as any)}
-          style={tw`bg-[#FFC72C] py-4 rounded-2xl flex-row items-center justify-center shadow-md`}
+          onPress={handleSubmitBid}
+          style={tw`bg-white border-2 border-slate-900 py-4 rounded-2xl flex-row items-center justify-center shadow-md`}
         >
-          <Text style={tw`text-base font-extrabold text-slate-900 mr-2`}>Submit Bid</Text>
+          <Text style={tw`text-base font-extrabold text-slate-900 mr-2`}>Submit Bid (Rs. {bid.toLocaleString()})</Text>
           <Ionicons name="arrow-forward" size={18} color="#0B1044" />
         </TouchableOpacity>
 

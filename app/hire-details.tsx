@@ -1,12 +1,62 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StatusBar as RNStatusBar } from 'react-native';
-import { useRouter } from 'expo-router';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, StatusBar as RNStatusBar, Alert } from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, Feather, FontAwesome5 } from '@expo/vector-icons';
 import tw from '@/lib/tw';
 
 export default function HireDetailsScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
+
+  const [secondsLeft, setSecondsLeft] = useState(
+    params.secondsLeft ? Number(params.secondsLeft) : 120
+  );
+  const [startingPrice, setStartingPrice] = useState(
+    params.startingPrice ? Number(params.startingPrice) : 1000
+  );
+  const [minBid, setMinBid] = useState(
+    params.minBid ? Number(params.minBid) : 900
+  );
+  const [maxBid, setMaxBid] = useState(
+    params.maxBid ? Number(params.maxBid) : 1200
+  );
+
+  useEffect(() => {
+    if (secondsLeft <= 0) return;
+    const timer = setInterval(() => {
+      setSecondsLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [secondsLeft]);
+
+  const mm = Math.floor(secondsLeft / 60).toString().padStart(2, '0');
+  const ss = (secondsLeft % 60).toString().padStart(2, '0');
+
+  const handleJoinBid = () => {
+    if (secondsLeft <= 0) {
+      Alert.alert('Bidding Closed', 'The bidding duration for this hire has ended.', [
+        { text: 'OK', onPress: () => router.push('/new-requests' as any) },
+      ]);
+      return;
+    }
+    router.push({
+      pathname: '/live-bidding',
+      params: {
+        startingPrice: startingPrice.toString(),
+        minBid: minBid.toString(),
+        maxBid: maxBid.toString(),
+        secondsLeft: secondsLeft.toString(),
+      },
+    } as any);
+  };
 
   return (
     <SafeAreaView style={tw`flex-1 bg-[#FFC72C]`} edges={['top', 'bottom']}>
@@ -23,7 +73,9 @@ export default function HireDetailsScreen() {
             <Text style={tw`text-[11px] text-[#0B1044]/70 font-semibold`}>Join the bid and get this ride</Text>
           </View>
         </View>
-        <TouchableOpacity style={tw`p-2 bg-white/40 rounded-full`}>
+        <TouchableOpacity 
+          onPress={() => router.push('/help-support' as any)}
+          style={tw`p-2 bg-white/40 rounded-full`}>
           <Feather name="headphones" size={18} color="#0B1044" />
         </TouchableOpacity>
       </View>
@@ -42,9 +94,11 @@ export default function HireDetailsScreen() {
               </Text>
             </View>
           </View>
-          <View style={tw`bg-white border border-amber-200 rounded-xl px-2 py-1.5 items-center justify-center`}>
-            <Text style={tw`text-xs font-extrabold text-slate-900`}>8:00</Text>
-            <Text style={tw`text-[8px] text-amber-600 font-bold uppercase`}>Bidding Duration</Text>
+          <View style={tw`bg-white border border-amber-200 rounded-xl px-2.5 py-1.5 items-center justify-center`}>
+            <Text style={[tw`text-xs font-black`, secondsLeft < 30 ? tw`text-red-600` : tw`text-slate-900`]}>
+              {mm}:{ss}
+            </Text>
+            <Text style={tw`text-[8px] text-amber-600 font-bold uppercase`}>Time Left</Text>
           </View>
         </View>
 
@@ -74,7 +128,9 @@ export default function HireDetailsScreen() {
                 </View>
               </View>
             </View>
-            <View style={tw`w-24 h-28 bg-slate-200 rounded-xl`} />
+            <View style={tw`w-24 h-28 bg-slate-200 rounded-xl items-center justify-center`}>
+              <Ionicons name="navigate-circle-outline" size={36} color="#0B1044" />
+            </View>
           </View>
 
           <View style={tw`h-[1px] bg-slate-100 my-4`} />
@@ -123,7 +179,7 @@ export default function HireDetailsScreen() {
               <Feather name="dollar-sign" size={12} color="#059669" />
             </View>
             <Text style={tw`text-[10px] text-slate-500 uppercase font-bold mb-0.5`}>Starting Price</Text>
-            <Text style={tw`text-sm font-extrabold text-slate-900`}>Rs. 1,000</Text>
+            <Text style={tw`text-sm font-extrabold text-slate-900`}>Rs. {startingPrice.toLocaleString()}</Text>
           </View>
           
           <View style={tw`flex-1 bg-white border border-blue-200 rounded-2xl p-3 shadow-sm items-center justify-center`}>
@@ -131,8 +187,8 @@ export default function HireDetailsScreen() {
               <Ionicons name="arrow-down-circle" size={14} color="#2563EB" />
             </View>
             <Text style={tw`text-[10px] text-slate-500 uppercase font-bold mb-0.5`}>Minimum Bid</Text>
-            <Text style={tw`text-sm font-extrabold text-blue-700`}>Rs. 900</Text>
-            <Text style={tw`text-[8px] text-slate-400 text-center mt-1`}>(10% below starting price)</Text>
+            <Text style={tw`text-sm font-extrabold text-blue-700`}>Rs. {minBid.toLocaleString()}</Text>
+            <Text style={tw`text-[8px] text-slate-400 text-center mt-1`}>(10% below starting)</Text>
           </View>
           
           <View style={tw`flex-1 bg-white border border-purple-200 rounded-2xl p-3 shadow-sm items-center justify-center`}>
@@ -140,8 +196,8 @@ export default function HireDetailsScreen() {
               <Ionicons name="arrow-up-circle" size={14} color="#9333EA" />
             </View>
             <Text style={tw`text-[10px] text-slate-500 uppercase font-bold mb-0.5`}>Maximum Bid</Text>
-            <Text style={tw`text-sm font-extrabold text-purple-700`}>Rs. 1,200</Text>
-            <Text style={tw`text-[8px] text-slate-400 text-center mt-1`}>(20% above starting price)</Text>
+            <Text style={tw`text-sm font-extrabold text-purple-700`}>Rs. {maxBid.toLocaleString()}</Text>
+            <Text style={tw`text-[8px] text-slate-400 text-center mt-1`}>(20% above starting)</Text>
           </View>
         </View>
 
@@ -169,10 +225,16 @@ export default function HireDetailsScreen() {
       {/* Fixed Bottom Actions */}
       <View style={tw`absolute bottom-0 left-0 right-0 p-4 bg-white border-t border-slate-100 shadow-md`}>
         <TouchableOpacity 
-          onPress={() => router.push('/live-bidding' as any)}
-          style={tw`bg-[#FFC72C] py-3.5 rounded-xl flex-row items-center justify-center shadow-sm mb-3`}>
+          onPress={handleJoinBid}
+          disabled={secondsLeft <= 0}
+          style={[
+            tw`py-3.5 rounded-xl flex-row items-center justify-center shadow-sm mb-3`,
+            secondsLeft > 0 ? tw`bg-[#FFC72C]` : tw`bg-slate-300`,
+          ]}>
           <Ionicons name="musical-notes" size={16} color="#0B1044" style={tw`mr-2`} />
-          <Text style={tw`font-extrabold text-[#0B1044]`}>Join Bid</Text>
+          <Text style={tw`font-extrabold text-[#0B1044]`}>
+            {secondsLeft > 0 ? 'Join Bid' : 'Bidding Closed'}
+          </Text>
         </TouchableOpacity>
         
         <TouchableOpacity 

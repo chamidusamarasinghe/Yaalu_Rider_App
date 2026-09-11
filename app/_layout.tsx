@@ -20,6 +20,17 @@ export default function RootLayout() {
         <Stack.Screen name="new-requests" options={{ headerShown: false }} />
         <Stack.Screen name="incoming-request" options={{ headerShown: false }} />
         <Stack.Screen name="request-accepted" options={{ headerShown: false }} />
+        <Stack.Screen name="hire-details" options={{ headerShown: false }} />
+        <Stack.Screen name="bid-request" options={{ headerShown: false }} />
+        <Stack.Screen name="place-bid" options={{ headerShown: false }} />
+        <Stack.Screen name="bid-submitted" options={{ headerShown: false }} />
+        <Stack.Screen name="bid-won" options={{ headerShown: false }} />
+        <Stack.Screen name="bid-lost" options={{ headerShown: false }} />
+        <Stack.Screen name="bid-history" options={{ headerShown: false }} />
+        <Stack.Screen name="bid-ending-soon" options={{ headerShown: false }} />
+        <Stack.Screen name="live-bidding" options={{ headerShown: false }} />
+        <Stack.Screen name="live-bids" options={{ headerShown: false }} />
+        <Stack.Screen name="navigate-pickup" options={{ headerShown: false }} />
         <Stack.Screen name="delivery/navigation" options={{ headerShown: false }} />
         <Stack.Screen name="delivery/step1" options={{ headerShown: false }} />
         <Stack.Screen name="delivery/step2" options={{ headerShown: false }} />
