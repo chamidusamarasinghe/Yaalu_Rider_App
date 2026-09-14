@@ -6,25 +6,67 @@ import {
   TouchableOpacity,
   ScrollView,
   StatusBar as RNStatusBar,
-  Image,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tw from '@/lib/tw';
+import { riderRegistrationService } from '@/services/rider-registration-service';
 
 export default function RegisterStep5BankingScreen() {
   const router = useRouter();
-  const [bankName, setBankName] = useState('');
-  const [accountHolder, setAccountHolder] = useState('');
-  const [accountNumber, setAccountNumber] = useState('');
-  const [branchCode, setBranchCode] = useState('');
+  const draft = riderRegistrationService.getDraft();
 
-  const handleCompleteRegistration = () => {
-    Alert.alert('Success!', 'Registration submitted successfully. Welcome to Yaalu Rider!', [
-      { text: 'Go to Dashboard', onPress: () => router.push('/dashboard') },
-    ]);
+  const [bankName, setBankName] = useState(draft.bankName || '');
+  const [accountHolder, setAccountHolder] = useState(
+    draft.accountHolder || (draft.firstName && draft.lastName ? `${draft.firstName} ${draft.lastName}` : ''),
+  );
+  const [accountNumber, setAccountNumber] = useState(draft.accountNumber || '');
+  const [branchCode, setBranchCode] = useState(draft.branchCode || '');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleCompleteRegistration = async () => {
+    if (!bankName.trim()) {
+      Alert.alert('Validation Error ⚠️', 'Please enter your Bank Name.');
+      return;
+    }
+    if (!accountHolder.trim()) {
+      Alert.alert('Validation Error ⚠️', 'Please enter Account Holder Name.');
+      return;
+    }
+    if (!accountNumber.trim()) {
+      Alert.alert('Validation Error ⚠️', 'Please enter Account Number.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    riderRegistrationService.setDraft({
+      bankName: bankName.trim(),
+      accountHolder: accountHolder.trim(),
+      accountNumber: accountNumber.trim(),
+      branchCode: branchCode.trim(),
+    });
+
+    try {
+      const res = await riderRegistrationService.submitRegistration();
+      setIsSubmitting(false);
+
+      Alert.alert(
+        'Registration Complete! 🎉',
+        'Your Rider profile & Cloudinary documents have been saved successfully to the database. Welcome to Yaalu Rider!',
+        [
+          {
+            text: 'Go to Dashboard',
+            onPress: () => router.push('/dashboard'),
+          },
+        ],
+      );
+    } catch (err: any) {
+      setIsSubmitting(false);
+      Alert.alert('Registration Error ⚠️', err?.message || 'Failed to submit registration. Please try again.');
+    }
   };
 
   return (
@@ -37,6 +79,8 @@ export default function RegisterStep5BankingScreen() {
           <TouchableOpacity onPress={() => router.back()} style={tw`p-1`}>
             <Ionicons name="chevron-back" size={26} color="#0B1044" />
           </TouchableOpacity>
+          <Text style={tw`text-lg font-bold text-[#0B1044]`}>Partner Registration</Text>
+          <View style={tw`w-6`} />
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={tw`p-5 pb-16`}>
@@ -55,46 +99,17 @@ export default function RegisterStep5BankingScreen() {
             We need your bank account information to ensure you receive your weekly earnings promptly and securely.
           </Text>
 
-          {/* Credit Card Hero Security Banner */}
-          <View style={tw`bg-[#0E2045] rounded-3xl p-5 shadow-xl mb-6 relative overflow-hidden border border-blue-900/40`}>
-            {/* Card Chip & Expiry mockup */}
-            <View style={tw`flex-row justify-between items-start mb-4`}>
-              <View style={tw`w-10 h-8 rounded-lg bg-amber-400/80 border border-amber-300 items-center justify-center`}>
-                <View style={tw`w-6 h-5 border border-amber-800/40 rounded`} />
-              </View>
-              <Text style={tw`text-[10px] font-black text-slate-400 uppercase tracking-widest`}>
-                BREKIT EARE
-              </Text>
-            </View>
-
-            <Text style={tw`text-lg font-black text-white tracking-widest my-2`}>
-              1234  5775  8578  5030
-            </Text>
-            <Text style={tw`text-[10px] font-extrabold text-slate-400 mb-4`}>CAEANREATORE</Text>
-
-            {/* SSL Badge Footer */}
-            <View style={tw`flex-row items-center gap-2 pt-2 border-t border-blue-800/50`}>
-              <Ionicons name="business" size={18} color="#FFFFFF" />
-              <View>
-                <Text style={tw`text-[9px] font-bold text-slate-400 uppercase tracking-wider`}>
-                  SECURITY STATUS
-                </Text>
-                <Text style={tw`text-xs font-black text-white`}>Encrypted SSL Connection</Text>
-              </View>
-            </View>
-          </View>
-
           {/* Bank Inputs */}
           <View style={tw`gap-4 mb-6`}>
             {/* Bank Name */}
             <View>
-              <Text style={tw`text-xs font-bold text-slate-600 mb-1.5`}>Bank Name</Text>
+              <Text style={tw`text-xs font-bold text-slate-600 mb-1.5`}>Bank Name *</Text>
               <View style={tw`flex-row items-center bg-white border border-slate-300 rounded-2xl px-3.5 py-3.5 gap-2.5`}>
                 <Ionicons name="business-outline" size={18} color="#64748B" />
                 <TextInput
                   value={bankName}
                   onChangeText={setBankName}
-                  placeholder="Enter bank name"
+                  placeholder="e.g. Commercial Bank / Sampath Bank / BOC"
                   placeholderTextColor="#94A3B8"
                   style={tw`flex-1 text-sm font-semibold text-slate-900 p-0`}
                 />
@@ -103,13 +118,13 @@ export default function RegisterStep5BankingScreen() {
 
             {/* Account Holder Name */}
             <View>
-              <Text style={tw`text-xs font-bold text-slate-600 mb-1.5`}>Account Holder Name</Text>
+              <Text style={tw`text-xs font-bold text-slate-600 mb-1.5`}>Account Holder Name *</Text>
               <View style={tw`flex-row items-center bg-white border border-slate-300 rounded-2xl px-3.5 py-3.5 gap-2.5`}>
                 <Ionicons name="person-outline" size={18} color="#64748B" />
                 <TextInput
                   value={accountHolder}
                   onChangeText={setAccountHolder}
-                  placeholder="Enter full name"
+                  placeholder="Full name as printed on bank passbook"
                   placeholderTextColor="#94A3B8"
                   style={tw`flex-1 text-sm font-semibold text-slate-900 p-0`}
                 />
@@ -118,7 +133,7 @@ export default function RegisterStep5BankingScreen() {
 
             {/* Account Number */}
             <View>
-              <Text style={tw`text-xs font-bold text-slate-600 mb-1.5`}>Account Number</Text>
+              <Text style={tw`text-xs font-bold text-slate-600 mb-1.5`}>Account Number *</Text>
               <View style={tw`flex-row items-center bg-white border border-slate-300 rounded-2xl px-3.5 py-3.5 gap-2.5`}>
                 <Ionicons name="keypad-outline" size={18} color="#64748B" />
                 <TextInput
@@ -134,13 +149,13 @@ export default function RegisterStep5BankingScreen() {
 
             {/* Branch Code / Routing Number */}
             <View>
-              <Text style={tw`text-xs font-bold text-slate-600 mb-1.5`}>Branch Code / Routing Number</Text>
+              <Text style={tw`text-xs font-bold text-slate-600 mb-1.5`}>Branch Code / City</Text>
               <View style={tw`flex-row items-center bg-white border border-slate-300 rounded-2xl px-3.5 py-3.5 gap-2.5`}>
                 <Ionicons name="location-outline" size={18} color="#64748B" />
                 <TextInput
                   value={branchCode}
                   onChangeText={setBranchCode}
-                  placeholder="Enter branch code"
+                  placeholder="e.g. 054 (Fort Branch)"
                   placeholderTextColor="#94A3B8"
                   style={tw`flex-1 text-sm font-semibold text-slate-900 p-0`}
                 />
@@ -148,21 +163,28 @@ export default function RegisterStep5BankingScreen() {
             </View>
           </View>
 
-          {/* Mint Green Verification Note */}
+          {/* Security Note */}
           <View style={tw`bg-emerald-100/70 border border-emerald-200 rounded-2xl p-4 flex-row items-start gap-3 mb-6`}>
             <Ionicons name="checkmark-circle" size={20} color="#059669" style={tw`mt-0.5`} />
             <Text style={tw`flex-1 text-xs font-medium text-emerald-900 leading-4.5`}>
-              Your details will be verified by our finance team. Incorrect information may delay your first payout.
+              Your registration profile and Cloudinary URLs will be verified. Submitting accurate data ensures instant account activation.
             </Text>
           </View>
 
-          {/* Complete Button */}
+          {/* Complete Registration Button */}
           <TouchableOpacity
             activeOpacity={0.85}
+            disabled={isSubmitting}
             onPress={handleCompleteRegistration}
             style={tw`w-full bg-[#030626] rounded-2xl py-4 flex-row items-center justify-center gap-2 shadow-md mb-4`}>
-            <Text style={tw`text-white font-extrabold text-base`}>Complete Registration</Text>
-            <Ionicons name="checkmark-circle-outline" size={20} color="#FFFFFF" />
+            {isSubmitting ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <>
+                <Text style={tw`text-white font-extrabold text-base`}>Submit Registration</Text>
+                <Ionicons name="checkmark-circle-outline" size={20} color="#FFFFFF" />
+              </>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/dashboard')}>
@@ -173,4 +195,3 @@ export default function RegisterStep5BankingScreen() {
     </SafeAreaView>
   );
 }
-
