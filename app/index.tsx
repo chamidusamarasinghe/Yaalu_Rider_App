@@ -30,7 +30,7 @@ export default function LanguageSelectScreen() {
 
       {/* Top Hero Section with Official Delivery Hero Image */}
       <ImageBackground
-        source={require('@/assets/images/delivery-hero.jpg')}
+        source={require('../assets/images/delivery-hero.jpg')}
         style={[tw`w-full`, { height: '52%' }]}
         resizeMode="cover">
         <View style={tw`flex-1 bg-black/40 justify-center items-center px-5`}>
@@ -45,7 +45,7 @@ export default function LanguageSelectScreen() {
 
             {/* Official Yellow YAALU Wordmark */}
             <Image
-              source={require('@/assets/images/yaalu-wordmark.png')}
+              source={require('../assets/images/yaalu-wordmark.png')}
               style={tw`w-44 h-11 my-1`}
               resizeMode="contain"
             />
