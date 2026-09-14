@@ -64,12 +64,12 @@ export const safeStorage = {
   },
 };
 
-// Auto-detect correct base URL (port 3001)
+// Auto-detect correct base URL (port 3000)
 export const getBaseUrl = (): string => {
   if (typeof window !== 'undefined' && window.location && Platform.OS === 'web') {
     const protocol = window.location.protocol || 'http:';
     const hostname = window.location.hostname || 'localhost';
-    return `${protocol}//${hostname}:3001`;
+    return `${protocol}//${hostname}:3000`;
   }
 
   const hostUri =
@@ -82,11 +82,11 @@ export const getBaseUrl = (): string => {
     const clean = String(hostUri).replace(/^[a-zA-Z]+:\/\//, '');
     const host = clean.split(':')[0].split('/')[0];
     if (host && host !== 'localhost' && host !== '127.0.0.1') {
-      return `http://${host}:3001`;
+      return `http://${host}:3000`;
     }
   }
 
-  return Platform.OS === 'android' ? 'http://10.0.2.2:3001' : 'http://localhost:3001';
+  return Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://localhost:3000';
 };
 
 export const BASE_URL = getBaseUrl();
