@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Text,
   View,
@@ -10,10 +10,73 @@ import { useRouter } from 'expo-router';
 import { Ionicons, Feather, FontAwesome5 } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tw from '@/lib/tw';
+import { fareApi } from '@/services/api';
 
 export default function NewRequestsScreen() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('Direct');
+  const [fareRates, setFareRates] = useState<any[]>([]);
+  const [directTrip, setDirectTrip] = useState({
+    distanceKm: 6.8,
+    estMinutes: 24,
+    fare: 3160,
+    riderEarnings: 2844,
+  });
+  const [bidTrip, setBidTrip] = useState({
+    distanceKm: 36.0,
+    startingPrice: 1000,
+    minBid: 900,
+    maxBid: 1200,
+    timeoutSeconds: 120,
+  });
+
+  useEffect(() => {
+    loadLiveFarePricing();
+  }, []);
+
+  const loadLiveFarePricing = async () => {
+    try {
+      // 1. Calculate direct delivery fare
+      const directCalc = await fareApi.calculateFare(6.8, 'MOTORBIKE');
+      if (directCalc && directCalc.totalFare) {
+        setDirectTrip((prev) => ({
+          ...prev,
+          fare: directCalc.totalFare,
+          riderEarnings: directCalc.riderNetEarnings || (directCalc.totalFare * 0.9),
+        }));
+      }
+
+      // 2. Calculate bid trip starting price & window
+      const bidCalc = await fareApi.calculateFare(36.0, 'THREE_WHEEL');
+      if (bidCalc && bidCalc.totalFare) {
+        const base = bidCalc.totalFare;
+        setBidTrip({
+          distanceKm: 36.0,
+          startingPrice: Math.round(base),
+          minBid: Math.round(base * 0.9),
+          maxBid: Math.round(base * 1.25),
+          timeoutSeconds: bidCalc.bidTimeoutSeconds || 120,
+        });
+      }
+    } catch (err) {
+      console.warn('Could not load dynamic fare in new requests:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (bidTrip.timeoutSeconds <= 0) return;
+    const interval = setInterval(() => {
+      setBidTrip((prev) => {
+        if (prev.timeoutSeconds <= 1) {
+          clearInterval(interval);
+          return { ...prev, timeoutSeconds: 0 };
+        }
+        return { ...prev, timeoutSeconds: prev.timeoutSeconds - 1 };
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [bidTrip.timeoutSeconds]);
 
   return (
     <SafeAreaView style={tw`flex-1 bg-[#FFC72C]`} edges={['top', 'bottom']}>
@@ -228,31 +291,43 @@ export default function NewRequestsScreen() {
               </View>
               <View style={tw`bg-red-50 px-2 py-1 rounded-md flex-row items-center`}>
                 <Feather name="clock" size={12} color="#DC2626" style={tw`mr-1`} />
-                <Text style={tw`text-[10px] font-bold text-red-600`}>7:59</Text>
+                <Text style={tw`text-[10px] font-bold text-red-600`}>
+                  {Math.floor(bidTrip.timeoutSeconds / 60)}:{(bidTrip.timeoutSeconds % 60).toString().padStart(2, '0')}
+                </Text>
               </View>
             </View>
 
             <View style={tw`mb-3`}>
               <Text style={tw`text-lg font-extrabold text-slate-900`}>Colombo City Center</Text>
               <Text style={tw`text-xs font-bold text-slate-400 my-1`}>TO</Text>
-              <Text style={tw`text-lg font-extrabold text-slate-900`}>Negombo</Text>
+              <Text style={tw`text-lg font-extrabold text-slate-900`}>Negombo ({bidTrip.distanceKm} km)</Text>
             </View>
 
             <View style={tw`bg-slate-50 rounded-2xl p-3 flex-row justify-between items-center mb-4 border border-slate-100`}>
               <View>
                 <Text style={tw`text-[9px] text-slate-400 uppercase font-bold`}>Starting Price</Text>
-                <Text style={tw`text-sm font-extrabold text-amber-600`}>Rs. 1,000</Text>
+                <Text style={tw`text-sm font-extrabold text-amber-600`}>Rs. {bidTrip.startingPrice.toLocaleString()}</Text>
               </View>
               <View style={tw`h-8 w-[1px] bg-slate-200`} />
               <View>
                 <Text style={tw`text-[9px] text-slate-400 uppercase font-bold`}>Bid Range</Text>
-                <Text style={tw`text-sm font-bold text-slate-900`}>Rs. 900 - 1,200</Text>
+                <Text style={tw`text-sm font-bold text-slate-900`}>
+                  Rs. {bidTrip.minBid.toLocaleString()} - {bidTrip.maxBid.toLocaleString()}
+                </Text>
               </View>
             </View>
 
             <TouchableOpacity
               activeOpacity={0.85}
-              onPress={() => router.push('/bid-request' as any)}
+              onPress={() => router.push({
+                pathname: '/bid-request',
+                params: {
+                  secondsLeft: bidTrip.timeoutSeconds.toString(),
+                  startingPrice: bidTrip.startingPrice.toString(),
+                  minBid: bidTrip.minBid.toString(),
+                  maxBid: bidTrip.maxBid.toString(),
+                },
+              } as any)}
               style={tw`bg-[#FFC72C] rounded-2xl py-3.5 flex-row items-center justify-center shadow-md`}>
               <Text style={tw`text-slate-900 font-extrabold text-sm`}>View Request</Text>
             </TouchableOpacity>

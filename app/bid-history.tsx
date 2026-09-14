@@ -92,8 +92,12 @@ export default function BidHistoryScreen() {
       <RNStatusBar barStyle="dark-content" backgroundColor="#FFC72C" />
 
       {/* Header */}
-      <View style={tw`bg-[#FFC72C] px-5 pt-4 pb-3 items-center shadow-xs`}>
-        <Text style={tw`text-2xl font-black text-[#0B1044]`}>Bid History</Text>
+      <View style={tw`bg-[#FFC72C] px-4 py-3 flex-row items-center justify-between shadow-xs`}>
+        <TouchableOpacity onPress={() => router.back()} style={tw`p-2 bg-white/40 rounded-full`}>
+          <Ionicons name="arrow-back" size={20} color="#0B1044" />
+        </TouchableOpacity>
+        <Text style={tw`text-xl font-black text-[#0B1044]`}>Bid History</Text>
+        <View style={tw`w-9`} />
       </View>
 
       {/* Stats Row */}

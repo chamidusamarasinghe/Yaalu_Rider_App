@@ -15,8 +15,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tw from '@/lib/tw';
 import riderApi, { getSavedRider } from '@/services/api';
+import InteractiveMap from '@/components/InteractiveMap';
+import { getCurrentRiderLocation, LocationCoords } from '@/lib/location';
 
 const { width: W } = Dimensions.get('window');
+
 
 /* ─── BOTTOM NAV ─────────────────────────────────────────────── */
 function BottomNav({ active }: { active: string }) {
@@ -77,11 +80,44 @@ export default function RiderDashboardScreen() {
   const [earnings, setEarnings] = useState<any>(null);
   const [availableCount, setAvailableCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [userLocation, setUserLocation] = useState<LocationCoords>({
+    latitude: 6.9271,
+    longitude: 79.8612,
+  });
+  const [isLocating, setIsLocating] = useState(false);
+  const [scrollEnabled, setScrollEnabled] = useState(true);
+
+  const fetchAndSetLocation = useCallback(async (updateBackend = true) => {
+    setIsLocating(true);
+    try {
+      const loc = await getCurrentRiderLocation();
+      if (loc) {
+        setUserLocation(loc);
+        if (updateBackend) {
+          riderApi.updateLocation(loc.latitude, loc.longitude).catch((err) => {
+            console.warn('Backend location sync note:', err.message);
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('Location fetch error:', e);
+    } finally {
+      setIsLocating(false);
+    }
+  }, []);
 
   const loadData = useCallback(async () => {
     try {
       const cached = await getSavedRider();
-      if (cached) setRider(cached);
+      if (cached) {
+        setRider(cached);
+        if (cached.currentLatitude && cached.currentLongitude) {
+          setUserLocation({
+            latitude: cached.currentLatitude,
+            longitude: cached.currentLongitude,
+          });
+        }
+      }
 
       const [profileRes, earningsRes, ordersRes] = await Promise.allSettled([
         riderApi.getProfile(),
@@ -93,6 +129,12 @@ export default function RiderDashboardScreen() {
         const p = profileRes.value as any;
         setRider(p.rider);
         setIsOnline(p.rider?.status === 'AVAILABLE');
+        if (p.rider?.currentLatitude && p.rider?.currentLongitude) {
+          setUserLocation({
+            latitude: p.rider.currentLatitude,
+            longitude: p.rider.currentLongitude,
+          });
+        }
       }
       if (earningsRes.status === 'fulfilled') setEarnings(earningsRes.value);
       if (ordersRes.status === 'fulfilled') setAvailableCount((ordersRes.value as any[]).length);
@@ -101,11 +143,14 @@ export default function RiderDashboardScreen() {
     }
   }, []);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    loadData();
+    fetchAndSetLocation(true);
+  }, [loadData, fetchAndSetLocation]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadData();
+    await Promise.all([loadData(), fetchAndSetLocation(true)]);
     setRefreshing(false);
   };
 
@@ -170,6 +215,7 @@ export default function RiderDashboardScreen() {
       {/* ── BODY ─────────────────────────────────── */}
       <View style={tw`flex-1 bg-[#F4F6FB] rounded-t-3xl overflow-hidden`}>
         <ScrollView
+          scrollEnabled={scrollEnabled}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: 110 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFC72C" />}>
@@ -199,6 +245,86 @@ export default function RiderDashboardScreen() {
                 activeOpacity={0.85}>
                 <Ionicons name="wallet-outline" size={15} color="#0B1044" />
                 <Text style={tw`text-xs font-black text-[#0B1044]`}>View Wallet & Payouts</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* ── LIVE INTERACTIVE MAP ───────────────────── */}
+          <View style={tw`mb-5`}>
+            <View style={tw`flex-row justify-between items-center mb-2`}>
+              <Text style={tw`text-xs font-black text-slate-500 uppercase tracking-widest`}>
+                Live Location & Area Map
+              </Text>
+              <View style={tw`flex-row items-center gap-2`}>
+                <TouchableOpacity
+                  onPress={() => fetchAndSetLocation(true)}
+                  disabled={isLocating}
+                  activeOpacity={0.8}
+                  style={tw`flex-row items-center gap-1.5 bg-[#0B1044] px-3 py-1 rounded-full border border-[#FFC72C]`}>
+                  {isLocating ? (
+                    <ActivityIndicator size="small" color="#FFC72C" />
+                  ) : (
+                    <Ionicons name="navigate-circle" size={15} color="#FFC72C" />
+                  )}
+                  <Text style={tw`text-[11px] font-black text-white`}>
+                    {isLocating ? 'Locating...' : 'My Location'}
+                  </Text>
+                </TouchableOpacity>
+
+                <View style={tw`flex-row items-center gap-1 bg-emerald-100 px-2 py-1 rounded-full`}>
+                  <View style={tw`w-2 h-2 rounded-full bg-emerald-600`} />
+                  <Text style={tw`text-[10px] font-bold text-emerald-800`}>Active GPS</Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={tw`relative rounded-2xl overflow-hidden shadow-sm`}>
+              <InteractiveMap
+                key={`map-${userLocation.latitude.toFixed(4)}-${userLocation.longitude.toFixed(4)}`}
+                height={220}
+                center={{ latitude: userLocation.latitude, longitude: userLocation.longitude }}
+                zoom={14}
+                onTouchStart={() => setScrollEnabled(false)}
+                onTouchEnd={() => setScrollEnabled(true)}
+                markers={[
+                  {
+                    id: 'rider-home-pos',
+                    latitude: userLocation.latitude,
+                    longitude: userLocation.longitude,
+                    title: rider?.firstName || rider?.fullName || 'Wenura',
+                    type: 'driver',
+                  },
+                  {
+                    id: 'nearby-shop-1',
+                    latitude: userLocation.latitude + 0.005,
+                    longitude: userLocation.longitude + 0.004,
+                    title: 'Yaalu Fresh Supermarket',
+                    type: 'pickup',
+                  },
+                  {
+                    id: 'nearby-shop-2',
+                    latitude: userLocation.latitude - 0.006,
+                    longitude: userLocation.longitude - 0.006,
+                    title: 'Colombo Bake House',
+                    type: 'pickup',
+                  },
+                ]}
+              />
+
+              {/* Floating My Location Button directly on Map */}
+              <TouchableOpacity
+                onPress={() => fetchAndSetLocation(true)}
+                activeOpacity={0.85}
+                disabled={isLocating}
+                style={tw`absolute bottom-3 right-3 bg-[#0B1044] border-2 border-[#FFC72C] px-3.5 py-2 rounded-xl flex-row items-center gap-1.5 shadow-md`}>
+                {isLocating ? (
+                  <ActivityIndicator size="small" color="#FFC72C" />
+                ) : (
+                  <Ionicons name="locate" size={17} color="#FFC72C" />
+                )}
+                <Text style={tw`text-xs font-black text-[#FFC72C]`}>
+                  {isLocating ? 'Locating...' : 'My Location'}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>

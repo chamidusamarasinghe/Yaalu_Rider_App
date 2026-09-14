@@ -24,14 +24,11 @@ export default function OrderDetailsScreen() {
 
       {/* Header Bar */}
       <View style={tw`bg-[#FFC72C] h-16 px-4 flex-row items-center justify-between shadow-sm`}>
-        {/* Profile Avatar */}
-        <View style={tw`w-10 h-10 rounded-full border-2 border-white overflow-hidden bg-slate-200`}>
-          <Image
-            source={{ uri: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200' }}
-            style={tw`w-full h-full`}
-            resizeMode="cover"
-          />
-        </View>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={tw`w-10 h-10 rounded-full bg-white/40 items-center justify-center`}>
+          <Ionicons name="arrow-back" size={20} color="#0B1044" />
+        </TouchableOpacity>
 
         {/* YAALU Wordmark */}
         <Image

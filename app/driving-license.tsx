@@ -11,32 +11,91 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as ImagePicker from 'expo-image-picker';
 import tw from '@/lib/tw';
+
+import riderApi, { uploadApi } from '@/services/api';
 
 export default function DrivingLicenseScreen() {
   const router = useRouter();
 
-  const [frontUri, setFrontUri] = useState<string | null>(
-    'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=400'
-  );
-  const [backUri, setBackUri] = useState<string | null>(
-    'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=400'
-  );
+  const [frontUri, setFrontUri] = useState<string | null>(null);
+  const [backUri, setBackUri] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleUploadFront = () => {
-    setFrontUri('https://images.unsplash.com/photo-1580674684081-7617fbf3d745?q=80&w=400');
-    Alert.alert('Front Side Uploaded', 'Driving license front image attached.');
+  const handleUploadFront = async () => {
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert('Permission Required', 'Please allow camera roll access to upload your license photos.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets && result.assets[0]?.uri) {
+        const localUri = result.assets[0].uri;
+        setFrontUri(localUri);
+        try {
+          const res = await uploadApi.uploadImage(localUri, 'riders');
+          setFrontUri(res.imageUrl);
+        } catch (e) {
+          console.warn('Upload error:', e);
+        }
+      }
+    } catch (err: any) {
+      Alert.alert('Photo Picker', 'Could not open photo library.');
+    }
   };
 
-  const handleUploadBack = () => {
-    setBackUri('https://images.unsplash.com/photo-1554224154-22dec7ec8818?q=80&w=400');
-    Alert.alert('Back Side Uploaded', 'Driving license back image attached.');
+  const handleUploadBack = async () => {
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert('Permission Required', 'Please allow camera roll access to upload your license photos.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets && result.assets[0]?.uri) {
+        const localUri = result.assets[0].uri;
+        setBackUri(localUri);
+        try {
+          const res = await uploadApi.uploadImage(localUri, 'riders');
+          setBackUri(res.imageUrl);
+        } catch (e) {
+          console.warn('Upload error:', e);
+        }
+      }
+    } catch (err: any) {
+      Alert.alert('Photo Picker', 'Could not open photo library.');
+    }
   };
 
-  const handleSubmitForReview = () => {
-    Alert.alert('Submitted!', 'Driving license sent for verification.', [
-      { text: 'OK', onPress: () => router.back() },
-    ]);
+  const handleSubmitForReview = async () => {
+    try {
+      setLoading(true);
+      await riderApi.updateProfile({
+        licenseNumber: 'B9876543',
+        licenseExpiry: '2028-12-31',
+        licenseFrontUrl: frontUri || undefined,
+        licenseBackUrl: backUri || undefined,
+      });
+      Alert.alert('Submitted!', 'Driving license details updated and saved to database.', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Failed to submit license details');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

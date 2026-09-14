@@ -102,7 +102,7 @@ export default function BidWonScreen() {
         {/* Action Buttons */}
         <TouchableOpacity
           activeOpacity={0.85}
-          onPress={() => {}}
+          onPress={() => router.push('/navigate-pickup' as any)}
           style={tw`bg-[#FFC72C] py-4 rounded-2xl flex-row items-center justify-center shadow-md mb-3`}
         >
           <Ionicons name="navigate" size={18} color="#0B1044" style={tw`mr-2`} />
