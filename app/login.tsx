@@ -21,8 +21,9 @@ import riderApi, { saveRegistrationDraft } from '@/services/api';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const [authMode, setAuthMode] = useState<'otp' | 'password'>('otp');
+  const [authMode, setAuthMode] = useState<'mobile' | 'email'>('mobile');
   const [mobileNumber, setMobileNumber] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -37,35 +38,11 @@ export default function LoginScreen() {
     return `+94${cleaned}`;
   };
 
-  const handleSendOTP = async () => {
+  const handleMobileLogin = async () => {
     setError(null);
     const cleaned = mobileNumber.trim().replace(/\s+/g, '');
     if (cleaned.length < 9) {
-      setError('Please enter a valid Sri Lankan mobile number (e.g. 77 123 4567)');
-      return;
-    }
-    const fullNumber = getCleanMobile();
-
-    try {
-      setLoading(true);
-      await riderApi.sendOtp(fullNumber);
-      await saveRegistrationDraft({ mobile: fullNumber, phone: fullNumber });
-      router.push({ pathname: '/verify-otp', params: { mobile: fullNumber } } as any);
-    } catch (err: any) {
-      console.warn('OTP request error:', err.message);
-      // If network fails in demo mode, still allow entering OTP screen
-      await saveRegistrationDraft({ mobile: fullNumber, phone: fullNumber });
-      router.push({ pathname: '/verify-otp', params: { mobile: fullNumber } } as any);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePasswordLogin = async () => {
-    setError(null);
-    const identifier = mobileNumber.trim();
-    if (!identifier) {
-      setError('Please enter your mobile number or email.');
+      setError('Please enter a valid mobile number (e.g. 77 123 4567)');
       return;
     }
     if (!password) {
@@ -73,7 +50,7 @@ export default function LoginScreen() {
       return;
     }
 
-    const fullNumber = identifier.includes('@') ? identifier : getCleanMobile();
+    const fullNumber = getCleanMobile();
 
     try {
       setLoading(true);
@@ -86,7 +63,57 @@ export default function LoginScreen() {
         router.replace('/dashboard');
       }
     } catch (err: any) {
-      setError(err.message || 'Login failed. Please check your credentials.');
+      setError(err.message || 'Login failed. Please check your mobile number and password.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEmailLogin = async () => {
+    setError(null);
+    const trimmedEmail = email.trim().toLowerCase();
+    if (!trimmedEmail || !trimmedEmail.includes('@')) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+    if (!password) {
+      setError('Please enter your password.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const res = await riderApi.login(trimmedEmail, password);
+      if (res?.rider || res?.accessToken) {
+        Alert.alert('Welcome Back!', `Logged in as ${res.rider?.fullName || 'Rider Partner'}`, [
+          { text: 'Continue', onPress: () => router.replace('/dashboard') },
+        ]);
+      } else {
+        router.replace('/dashboard');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Login failed. Please check your email address and password.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendOTP = async () => {
+    setError(null);
+    const cleaned = mobileNumber.trim().replace(/\s+/g, '');
+    if (cleaned.length < 9) {
+      setError('Please enter a valid mobile number to receive an OTP code.');
+      return;
+    }
+    const fullNumber = getCleanMobile();
+    try {
+      setLoading(true);
+      await riderApi.sendOtp(fullNumber);
+      await saveRegistrationDraft({ mobile: fullNumber, phone: fullNumber });
+      router.push({ pathname: '/verify-otp', params: { mobile: fullNumber } } as any);
+    } catch {
+      await saveRegistrationDraft({ mobile: fullNumber, phone: fullNumber });
+      router.push({ pathname: '/verify-otp', params: { mobile: fullNumber } } as any);
     } finally {
       setLoading(false);
     }
@@ -120,58 +147,60 @@ export default function LoginScreen() {
         <View style={tw`flex-1 bg-white rounded-t-[36px] px-6 pt-6 shadow-2xl`}>
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={tw`pb-10`}>
 
-            <Text style={tw`text-2xl font-black text-[#0B1044]`}>Welcome Back 👋</Text>
+            <Text style={tw`text-2xl font-black text-[#0B1044]`}>
+              {authMode === 'mobile' ? 'Mobile Login 👋' : 'Email Sign In ✉️'}
+            </Text>
             <Text style={tw`text-xs text-slate-500 mt-1 mb-5`}>
-              {authMode === 'otp'
-                ? 'Enter your mobile number to receive a verification OTP'
-                : 'Sign in with your registered mobile or email and password'}
+              {authMode === 'mobile'
+                ? 'Sign in with your registered mobile number and password'
+                : 'Sign in with your registered email address and password'}
             </Text>
 
             {/* ── AUTH MODE SWITCHER TAB ───────────────── */}
             <View style={tw`flex-row bg-slate-100 p-1 rounded-2xl mb-5`}>
               <TouchableOpacity
                 onPress={() => {
-                  setAuthMode('otp');
+                  setAuthMode('mobile');
                   setError(null);
                 }}
                 style={[
                   tw`flex-1 py-2.5 rounded-xl items-center justify-center flex-row gap-1.5`,
-                  authMode === 'otp' ? tw`bg-white shadow-xs` : {},
+                  authMode === 'mobile' ? tw`bg-white shadow-xs` : {},
                 ]}>
                 <Ionicons
-                  name="phone-portrait-outline"
+                  name="call-outline"
                   size={16}
-                  color={authMode === 'otp' ? '#0B1044' : '#64748B'}
+                  color={authMode === 'mobile' ? '#0B1044' : '#64748B'}
                 />
                 <Text
                   style={[
                     tw`text-xs font-black`,
-                    authMode === 'otp' ? tw`text-[#0B1044]` : tw`text-slate-500`,
+                    authMode === 'mobile' ? tw`text-[#0B1044]` : tw`text-slate-500`,
                   ]}>
-                  OTP Login
+                  Mobile Login
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={() => {
-                  setAuthMode('password');
+                  setAuthMode('email');
                   setError(null);
                 }}
                 style={[
                   tw`flex-1 py-2.5 rounded-xl items-center justify-center flex-row gap-1.5`,
-                  authMode === 'password' ? tw`bg-white shadow-xs` : {},
+                  authMode === 'email' ? tw`bg-white shadow-xs` : {},
                 ]}>
                 <Ionicons
-                  name="key-outline"
+                  name="mail-outline"
                   size={16}
-                  color={authMode === 'password' ? '#0B1044' : '#64748B'}
+                  color={authMode === 'email' ? '#0B1044' : '#64748B'}
                 />
                 <Text
                   style={[
                     tw`text-xs font-black`,
-                    authMode === 'password' ? tw`text-[#0B1044]` : tw`text-slate-500`,
+                    authMode === 'email' ? tw`text-[#0B1044]` : tw`text-slate-500`,
                   ]}>
-                  Password
+                  Email Login
                 </Text>
               </TouchableOpacity>
             </View>
@@ -184,55 +213,53 @@ export default function LoginScreen() {
               </View>
             )}
 
-            {/* ── MOBILE INPUT ─────────────────────── */}
-            <Text style={tw`text-[11px] font-black text-slate-400 tracking-widest mb-1.5 uppercase`}>
-              {authMode === 'otp' ? 'Mobile Number' : 'Mobile Number or Email'}
-            </Text>
-            <View
-              style={[
-                tw`flex-row items-center rounded-2xl px-4 h-13.5 border-2 mb-4`,
-                focusedInput === 'mobile'
-                  ? tw`border-[#FFC72C] bg-amber-50/40`
-                  : tw`border-slate-200 bg-slate-50`,
-              ]}>
-              {!mobileNumber.includes('@') && (
-                <View style={tw`flex-row items-center gap-1.5 pr-2.5`}>
-                  <Text style={{ fontSize: 16 }}>🇱🇰</Text>
-                  <Text style={tw`text-sm font-bold text-[#0B1044]`}>+94</Text>
-                  <Ionicons name="chevron-down" size={12} color="#94A3B8" />
+            {/* ── MOBILE MODE INPUTS ─────────────────── */}
+            {authMode === 'mobile' && (
+              <>
+                <Text style={tw`text-[11px] font-black text-slate-400 tracking-widest mb-1.5 uppercase`}>
+                  Mobile Number
+                </Text>
+                <View
+                  style={[
+                    tw`flex-row items-center rounded-2xl px-4 h-13.5 border-2 mb-4`,
+                    focusedInput === 'mobile'
+                      ? tw`border-[#FFC72C] bg-amber-50/40`
+                      : tw`border-slate-200 bg-slate-50`,
+                  ]}>
+                  <View style={tw`flex-row items-center gap-1.5 pr-2.5`}>
+                    <Text style={{ fontSize: 16 }}>🇱🇰</Text>
+                    <Text style={tw`text-sm font-bold text-[#0B1044]`}>+94</Text>
+                    <Ionicons name="chevron-down" size={12} color="#94A3B8" />
+                  </View>
+                  <View style={tw`w-px h-6 bg-slate-200 mr-2.5`} />
+                  <TextInput
+                    style={tw`flex-1 text-sm font-bold text-[#0B1044]`}
+                    placeholder="7X XXX XXXX"
+                    placeholderTextColor="#CBD5E1"
+                    keyboardType="phone-pad"
+                    autoCapitalize="none"
+                    value={mobileNumber}
+                    onChangeText={(t) => {
+                      setMobileNumber(t);
+                      if (error) setError(null);
+                    }}
+                    onFocus={() => setFocusedInput('mobile')}
+                    onBlur={() => setFocusedInput(null)}
+                  />
+                  {mobileNumber.length > 0 && (
+                    <TouchableOpacity onPress={() => setMobileNumber('')}>
+                      <Ionicons name="close-circle" size={18} color="#CBD5E1" />
+                    </TouchableOpacity>
+                  )}
                 </View>
-              )}
-              <View style={tw`w-px h-6 bg-slate-200 mr-2.5`} />
-              <TextInput
-                style={tw`flex-1 text-sm font-bold text-[#0B1044]`}
-                placeholder={authMode === 'otp' ? '7X XXX XXXX' : '7X XXX XXXX or email@domain.com'}
-                placeholderTextColor="#CBD5E1"
-                keyboardType={authMode === 'otp' ? 'phone-pad' : 'default'}
-                autoCapitalize="none"
-                value={mobileNumber}
-                onChangeText={(t) => {
-                  setMobileNumber(t);
-                  if (error) setError(null);
-                }}
-                onFocus={() => setFocusedInput('mobile')}
-                onBlur={() => setFocusedInput(null)}
-              />
-              {mobileNumber.length > 0 && (
-                <TouchableOpacity onPress={() => setMobileNumber('')}>
-                  <Ionicons name="close-circle" size={18} color="#CBD5E1" />
-                </TouchableOpacity>
-              )}
-            </View>
 
-            {/* ── PASSWORD INPUT (IF PASSWORD MODE) ────── */}
-            {authMode === 'password' && (
-              <View style={tw`mb-4`}>
+                {/* Password Input */}
                 <Text style={tw`text-[11px] font-black text-slate-400 tracking-widest mb-1.5 uppercase`}>
                   Password
                 </Text>
                 <View
                   style={[
-                    tw`flex-row items-center rounded-2xl px-4 h-13.5 border-2`,
+                    tw`flex-row items-center rounded-2xl px-4 h-13.5 border-2 mb-2`,
                     focusedInput === 'password'
                       ? tw`border-[#FFC72C] bg-amber-50/40`
                       : tw`border-slate-200 bg-slate-50`,
@@ -259,19 +286,86 @@ export default function LoginScreen() {
                     />
                   </TouchableOpacity>
                 </View>
-              </View>
+
+                <View style={tw`flex-row justify-end mb-4`}>
+                  <TouchableOpacity onPress={handleSendOTP}>
+                    <Text style={tw`text-xs font-bold text-[#0B1044] underline`}>
+                      Forgot Password? Login with OTP
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </>
             )}
 
-            {/* ── SECURITY NOTICE ──────────────────── */}
-            {authMode === 'otp' && (
-              <View style={tw`flex-row items-center bg-amber-50/60 border border-amber-200/60 rounded-2xl p-3 mb-5 gap-2.5`}>
-                <View style={tw`w-8 h-8 rounded-xl bg-[#0B1044] items-center justify-center`}>
-                  <Ionicons name="shield-checkmark" size={16} color="#FFC72C" />
-                </View>
-                <Text style={tw`flex-1 text-xs text-[#0B1044] font-medium leading-4.5`}>
-                  We'll send a 6-digit OTP to verify your phone number and load your profile.
+            {/* ── EMAIL MODE INPUTS ──────────────────── */}
+            {authMode === 'email' && (
+              <>
+                <Text style={tw`text-[11px] font-black text-slate-400 tracking-widest mb-1.5 uppercase`}>
+                  Email Address
                 </Text>
-              </View>
+                <View
+                  style={[
+                    tw`flex-row items-center rounded-2xl px-4 h-13.5 border-2 mb-4`,
+                    focusedInput === 'email'
+                      ? tw`border-[#FFC72C] bg-amber-50/40`
+                      : tw`border-slate-200 bg-slate-50`,
+                  ]}>
+                  <Ionicons name="mail-outline" size={18} color="#64748B" style={tw`mr-2`} />
+                  <TextInput
+                    style={tw`flex-1 text-sm font-bold text-[#0B1044]`}
+                    placeholder="rider@yaalu.lk"
+                    placeholderTextColor="#CBD5E1"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    value={email}
+                    onChangeText={(t) => {
+                      setEmail(t);
+                      if (error) setError(null);
+                    }}
+                    onFocus={() => setFocusedInput('email')}
+                    onBlur={() => setFocusedInput(null)}
+                  />
+                  {email.length > 0 && (
+                    <TouchableOpacity onPress={() => setEmail('')}>
+                      <Ionicons name="close-circle" size={18} color="#CBD5E1" />
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {/* Password Input */}
+                <Text style={tw`text-[11px] font-black text-slate-400 tracking-widest mb-1.5 uppercase`}>
+                  Password
+                </Text>
+                <View
+                  style={[
+                    tw`flex-row items-center rounded-2xl px-4 h-13.5 border-2 mb-5`,
+                    focusedInput === 'password'
+                      ? tw`border-[#FFC72C] bg-amber-50/40`
+                      : tw`border-slate-200 bg-slate-50`,
+                  ]}>
+                  <Ionicons name="lock-closed-outline" size={18} color="#64748B" style={tw`mr-2`} />
+                  <TextInput
+                    style={tw`flex-1 text-sm font-bold text-[#0B1044]`}
+                    placeholder="Enter your password"
+                    placeholderTextColor="#CBD5E1"
+                    secureTextEntry={!showPassword}
+                    value={password}
+                    onChangeText={(t) => {
+                      setPassword(t);
+                      if (error) setError(null);
+                    }}
+                    onFocus={() => setFocusedInput('password')}
+                    onBlur={() => setFocusedInput(null)}
+                  />
+                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={tw`p-1`}>
+                    <Ionicons
+                      name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                      size={18}
+                      color="#94A3B8"
+                    />
+                  </TouchableOpacity>
+                </View>
+              </>
             )}
 
             {/* ── SUBMIT BUTTON ────────────────────── */}
@@ -281,14 +375,14 @@ export default function LoginScreen() {
                 tw`rounded-2xl h-14 items-center justify-center flex-row gap-2 shadow-md`,
                 { backgroundColor: loading ? '#94A3B8' : '#0B1044' },
               ]}
-              onPress={authMode === 'otp' ? handleSendOTP : handlePasswordLogin}
+              onPress={authMode === 'mobile' ? handleMobileLogin : handleEmailLogin}
               disabled={loading}>
               {loading ? (
                 <ActivityIndicator color="#FFC72C" size="small" />
               ) : (
                 <>
                   <Text style={tw`text-base font-black text-white`}>
-                    {authMode === 'otp' ? 'Send OTP Code' : 'Sign In as Rider'}
+                    {authMode === 'mobile' ? 'Sign In with Mobile' : 'Sign In with Email'}
                   </Text>
                   <Ionicons name="arrow-forward" size={18} color="#FFC72C" />
                 </>

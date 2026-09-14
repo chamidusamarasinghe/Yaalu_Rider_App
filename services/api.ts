@@ -198,7 +198,7 @@ export const riderApi = {
       : { mobile: mobileOrEmail, password };
 
     try {
-      const res: any = await request('POST', '/riders/login', payload, false, 3500);
+      const res: any = await request('POST', '/riders/login', payload, false, 4000);
       if (res?.accessToken || res?.token) {
         const token = res.accessToken || res.token;
         await saveToken(token);
@@ -206,26 +206,9 @@ export const riderApi = {
       }
       return res;
     } catch (err: any) {
-      // Offline fallback: allow login with draft or simulated session
-      const draft = (await getRegistrationDraft()) || {};
-      const fallbackRider = {
-        id: 'rider-local-' + Date.now(),
-        fullName: draft.fullName || 'Rider Partner',
-        firstName: draft.firstName || 'Rider',
-        lastName: draft.lastName || 'Partner',
-        phone: mobileOrEmail,
-        mobile: mobileOrEmail,
-        status: 'AVAILABLE',
-        isApproved: true,
-      };
-      const fallbackToken = 'local-jwt-token-' + Date.now();
-      await saveToken(fallbackToken);
-      await saveRider(fallbackRider);
-      return {
-        accessToken: fallbackToken,
-        rider: fallbackRider,
-        message: 'Logged in locally',
-      };
+      // Strictly throw error if backend is online or returned invalid credentials message
+      console.warn('Rider login failed:', err.message);
+      throw err;
     }
   },
 
@@ -376,6 +359,7 @@ export const riderApi = {
         fullName: data.fullName || `${data.firstName || 'Rider'} ${data.lastName || 'Partner'}`.trim(),
         phone: data.phone || data.mobile || '+94771234567',
         mobile: data.phone || data.mobile || '+94771234567',
+        email: data.email || '',
         status: 'AVAILABLE',
         isApproved: true,
         vehicleType: data.vehicleType || 'MOTORBIKE',

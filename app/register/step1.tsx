@@ -22,6 +22,7 @@ export default function RegisterStep1Screen() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [nic, setNic] = useState('');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -35,6 +36,7 @@ export default function RegisterStep1Screen() {
         if (draft.firstName) setFirstName(draft.firstName);
         if (draft.lastName) setLastName(draft.lastName);
         if (draft.phone || draft.mobile) setPhone(draft.phone || draft.mobile);
+        if (draft.email) setEmail(draft.email);
         if (draft.nicNumber || draft.nic) setNic(draft.nicNumber || draft.nic);
         if (draft.profilePhotoUrl) setPhotoUri(draft.profilePhotoUrl);
       }
@@ -98,6 +100,7 @@ export default function RegisterStep1Screen() {
       fullName,
       phone: phone.trim(),
       mobile: phone.trim(),
+      email: email.trim() || undefined,
       nicNumber: nic.trim(),
       profilePhotoUrl: photoUri || undefined,
     };
@@ -218,6 +221,20 @@ export default function RegisterStep1Screen() {
                 onChangeText={(t) => { setPhone(t); if (error) setError(null); }}
                 keyboardType="phone-pad"
                 placeholder="+94 77 123 4567"
+                placeholderTextColor="#94A3B8"
+                style={tw`bg-white border border-slate-200 rounded-xl p-3 text-sm font-semibold text-slate-900 shadow-xs`}
+              />
+            </View>
+
+            {/* Email Address Input */}
+            <View style={tw`mb-3`}>
+              <Text style={tw`text-xs font-bold text-slate-700 mb-1`}>Email Address (Optional)</Text>
+              <TextInput
+                value={email}
+                onChangeText={(t) => { setEmail(t); if (error) setError(null); }}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                placeholder="e.g. rider@example.com"
                 placeholderTextColor="#94A3B8"
                 style={tw`bg-white border border-slate-200 rounded-xl p-3 text-sm font-semibold text-slate-900 shadow-xs`}
               />
