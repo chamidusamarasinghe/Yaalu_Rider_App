@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Text,
   View,
@@ -7,10 +7,7 @@ import {
   ScrollView,
   StatusBar as RNStatusBar,
   Alert,
-<<<<<<< HEAD
   Image,
-=======
->>>>>>> 85a2985458da56e75b8bfb3bdd27aeb712afa942
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -18,7 +15,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import tw from '@/lib/tw';
-<<<<<<< HEAD
 import { riderRegistrationService } from '@/services/rider-registration-service';
 import { uploadService } from '@/services/upload-service';
 
@@ -89,9 +85,9 @@ export default function RegisterStep3Screen() {
     ]);
   };
 
-  // Registration Document Upload handler (Max 10MB)
+  // Vehicle Registration Document (Revenue License / Log Book) Upload handler (Max 10MB)
   const handleUploadRegistrationDoc = () => {
-    Alert.alert('Registration Document 📄', 'Select Revenue License / Log Book photo for Cloudinary (Max 10MB):', [
+    Alert.alert('Registration Document 📄', 'Select Revenue License / Log Book document (Max 10MB):', [
       {
         text: 'Take Photo (Camera)',
         onPress: async () => {
@@ -167,77 +163,6 @@ export default function RegisterStep3Screen() {
     });
 
     router.push('/register/step4');
-=======
-import riderApi, { saveRegistrationDraft, getRegistrationDraft } from '@/services/api';
-
-export default function RegisterStep3Screen() {
-  const router = useRouter();
-  const [selectedVehicle, setSelectedVehicle] = useState<'Bike' | 'Tuk' | 'Car' | 'Van' | 'Lorry'>('Bike');
-  const [vehicleModel, setVehicleModel] = useState('');
-  const [plateNumber, setPlateNumber] = useState('');
-  const [phone, setPhone] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    (async () => {
-      const draft = await getRegistrationDraft();
-      if (draft) {
-        if (draft.phone || draft.mobile) setPhone(draft.phone || draft.mobile);
-        if (draft.vehicleType) {
-          const vt = draft.vehicleType.toUpperCase();
-          if (vt.includes('BIKE') || vt.includes('SCOOTER')) setSelectedVehicle('Bike');
-          else if (vt.includes('THREE') || vt.includes('TUK')) setSelectedVehicle('Tuk');
-          else if (vt.includes('VAN')) setSelectedVehicle('Van');
-          else if (vt.includes('LORRY')) setSelectedVehicle('Lorry');
-          else setSelectedVehicle('Car');
-        }
-        if (draft.vehicleModel) setVehicleModel(draft.vehicleModel);
-        if (draft.vehicleNumber || draft.plateNumber) {
-          setPlateNumber(draft.vehicleNumber || draft.plateNumber);
-        }
-      }
-    })();
-  }, []);
-
-  const handleNextStep = async () => {
-    setError(null);
-    if (!plateNumber.trim()) {
-      setError('Please enter your vehicle plate number (e.g. WP CAB-1234).');
-      return;
-    }
-
-    const typeMapping: Record<string, string> = {
-      Bike: 'MOTORBIKE',
-      Tuk: 'THREE_WHEEL',
-      Car: 'CAR',
-      Van: 'VAN',
-      Lorry: 'LORRY',
-    };
-
-    const payload = {
-      phone,
-      mobile: phone,
-      vehicleType: typeMapping[selectedVehicle] || 'MOTORBIKE',
-      vehicleModel: vehicleModel.trim() || `${selectedVehicle} Standard`,
-      vehicleNumber: plateNumber.trim().toUpperCase(),
-      plateNumber: plateNumber.trim().toUpperCase(),
-    };
-
-    try {
-      setLoading(true);
-      await saveRegistrationDraft(payload);
-      // Non-blocking background sync to backend
-      riderApi.registerStep3(payload).catch((backendErr: any) => {
-        console.log('Step 3 background sync info:', backendErr?.message || backendErr);
-      });
-      router.push('/register/step4');
-    } catch (err: any) {
-      setError(err.message || 'Failed to proceed to step 4.');
-    } finally {
-      setLoading(false);
-    }
->>>>>>> 85a2985458da56e75b8bfb3bdd27aeb712afa942
   };
 
   return (
@@ -245,7 +170,7 @@ export default function RegisterStep3Screen() {
       <RNStatusBar barStyle="dark-content" backgroundColor="#FFC72C" />
 
       <View style={tw`flex-1 bg-[#F8FAFC]`}>
-        {/* Top Gold Header Bar */}
+        {/* Top Header Bar */}
         <View style={tw`bg-[#FFC72C] h-14 px-4 flex-row items-center justify-between shadow-sm`}>
           <TouchableOpacity onPress={() => router.back()} style={tw`p-1`}>
             <Ionicons name="chevron-back" size={26} color="#0B1044" />
@@ -266,14 +191,6 @@ export default function RegisterStep3Screen() {
             </View>
           </View>
 
-          {/* Error Message */}
-          {error && (
-            <View style={tw`bg-rose-50 border border-rose-200 rounded-xl p-3 mb-4 flex-row items-center gap-2`}>
-              <Ionicons name="alert-circle" size={18} color="#E11D48" />
-              <Text style={tw`flex-1 text-xs font-bold text-rose-700`}>{error}</Text>
-            </View>
-          )}
-
           {/* Select Vehicle Type */}
           <Text style={tw`text-xs font-bold text-slate-700 mb-3`}>Select Vehicle Type *</Text>
           <View style={tw`gap-2.5 mb-5`}>
@@ -281,13 +198,8 @@ export default function RegisterStep3Screen() {
             <View style={tw`flex-row gap-2.5`}>
               {[
                 { id: 'Bike', label: 'Motorbike', icon: 'bicycle-outline' },
-                { id: 'Tuk', label: 'Three Wheel', icon: 'bus-outline' },
-                { id: 'Car', label: 'Car', icon: 'car-outline' },
-<<<<<<< HEAD
-                { id: 'Bike', label: 'Bike', icon: 'bicycle-outline' },
                 { id: 'Tuk', label: 'Tuk-Tuk', icon: 'bus-outline' },
-=======
->>>>>>> 85a2985458da56e75b8bfb3bdd27aeb712afa942
+                { id: 'Car', label: 'Car', icon: 'car-outline' },
               ].map((item) => (
                 <TouchableOpacity
                   key={item.id}
@@ -349,10 +261,9 @@ export default function RegisterStep3Screen() {
           </View>
 
           {/* Vehicle Model & Plate Inputs */}
-          <View style={tw`gap-3 mb-5`}>
-<<<<<<< HEAD
-            <View style={tw`bg-white border border-slate-300 rounded-2xl p-3.5`}>
-              <Text style={tw`text-[11px] font-bold text-slate-500 mb-1`}>Vehicle Model *</Text>
+          <View style={tw`gap-3.5 mb-5`}>
+            <View style={tw`bg-white border border-slate-300 rounded-2xl p-3.5 shadow-xs`}>
+              <Text style={tw`text-[11px] font-bold text-[#0B1044] mb-1`}>Vehicle Model *</Text>
               <TextInput
                 value={vehicleModel}
                 onChangeText={setVehicleModel}
@@ -362,8 +273,8 @@ export default function RegisterStep3Screen() {
               />
             </View>
 
-            <View style={tw`bg-white border border-slate-300 rounded-2xl p-3.5`}>
-              <Text style={tw`text-[11px] font-bold text-slate-500 mb-1`}>Vehicle Plate Number *</Text>
+            <View style={tw`bg-white border border-slate-300 rounded-2xl p-3.5 shadow-xs`}>
+              <Text style={tw`text-[11px] font-bold text-[#0B1044] mb-1`}>Vehicle Plate Number *</Text>
               <TextInput
                 value={plateNumber}
                 onChangeText={setPlateNumber}
@@ -376,23 +287,30 @@ export default function RegisterStep3Screen() {
           </View>
 
           {/* Vehicle Photo Upload Box */}
+          <Text style={tw`text-xs font-black text-slate-700 uppercase tracking-wider mb-2`}>
+            VEHICLE PHOTO * (Cloudinary CDN, Max 5MB)
+          </Text>
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={handleUploadVehiclePhoto}
+            disabled={isUploadingVehicle}
             style={tw`border-2 border-dashed ${
               vehiclePhoto ? 'border-emerald-500 bg-emerald-50/40' : 'border-slate-300 bg-white'
-            } rounded-3xl p-5 items-center justify-center mb-4 overflow-hidden relative`}>
+            } rounded-3xl p-5 items-center justify-center mb-5 overflow-hidden relative shadow-xs`}>
             {vehiclePhoto ? (
               <View style={tw`items-center`}>
-                <Image source={{ uri: vehiclePhoto }} style={tw`w-24 h-20 rounded-xl mb-2`} />
+                <Image source={{ uri: vehiclePhoto }} style={tw`w-28 h-20 rounded-xl mb-2`} resizeMode="cover" />
                 <Text style={tw`text-xs font-black text-emerald-800`}>Vehicle Photo Uploaded ☁️</Text>
                 <Text style={tw`text-[10px] font-semibold text-slate-500 mt-0.5`}>Tap to re-upload photo</Text>
               </View>
             ) : isUploadingVehicle ? (
-              <ActivityIndicator size="large" color="#2563EB" />
+              <View style={tw`items-center py-4`}>
+                <ActivityIndicator size="large" color="#0B1044" />
+                <Text style={tw`text-xs text-blue-600 font-bold mt-2`}>Uploading to Cloudinary...</Text>
+              </View>
             ) : (
               <>
-                <View style={tw`w-10 h-10 rounded-full bg-[#030626] items-center justify-center shadow-xs`}>
+                <View style={tw`w-10 h-10 rounded-full bg-[#0B1044] items-center justify-center shadow-xs`}>
                   <Ionicons name="camera-outline" size={20} color="#FFFFFF" />
                 </View>
                 <Text style={tw`text-xs font-black text-slate-900 mt-2`}>Vehicle Photo *</Text>
@@ -404,12 +322,16 @@ export default function RegisterStep3Screen() {
           </TouchableOpacity>
 
           {/* Registration Doc Upload Box */}
+          <Text style={tw`text-xs font-black text-slate-700 uppercase tracking-wider mb-2`}>
+            REVENUE LICENSE / LOG BOOK * (Cloudinary CDN, Max 10MB)
+          </Text>
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={handleUploadRegistrationDoc}
+            disabled={isUploadingDoc}
             style={tw`border-2 border-dashed ${
               registrationDoc ? 'border-emerald-500 bg-emerald-50/40' : 'border-slate-300 bg-white'
-            } rounded-3xl p-5 items-center justify-center mb-5 overflow-hidden relative`}>
+            } rounded-3xl p-5 items-center justify-center mb-6 overflow-hidden relative shadow-xs`}>
             {registrationDoc ? (
               <View style={tw`items-center`}>
                 <Ionicons name="checkmark-circle" size={32} color="#059669" />
@@ -417,11 +339,14 @@ export default function RegisterStep3Screen() {
                 <Text style={tw`text-[10px] font-semibold text-slate-500 mt-0.5`}>Tap to re-upload Revenue License</Text>
               </View>
             ) : isUploadingDoc ? (
-              <ActivityIndicator size="large" color="#D97706" />
+              <View style={tw`items-center py-4`}>
+                <ActivityIndicator size="large" color="#0B1044" />
+                <Text style={tw`text-xs text-blue-600 font-bold mt-2`}>Uploading Document...</Text>
+              </View>
             ) : (
               <>
                 <View style={tw`w-10 h-10 rounded-full bg-amber-400 items-center justify-center shadow-xs`}>
-                  <Ionicons name="document-text-outline" size={20} color="#030626" />
+                  <Ionicons name="document-text-outline" size={20} color="#0B1044" />
                 </View>
                 <Text style={tw`text-xs font-black text-slate-900 mt-2`}>Vehicle Registration Document *</Text>
                 <Text style={tw`text-[10px] font-medium text-slate-500 mt-0.5 text-center`}>
@@ -431,56 +356,14 @@ export default function RegisterStep3Screen() {
             )}
           </TouchableOpacity>
 
-=======
-            <View>
-              <Text style={tw`text-xs font-bold text-slate-700 mb-1`}>Vehicle Model</Text>
-              <View style={tw`bg-white border border-slate-300 rounded-2xl p-3.5 shadow-xs`}>
-                <TextInput
-                  value={vehicleModel}
-                  onChangeText={setVehicleModel}
-                  placeholder="e.g. Honda Dio / Bajaj Pulsar / Suzuki Alto"
-                  placeholderTextColor="#94A3B8"
-                  style={tw`text-sm font-semibold text-slate-900 p-0`}
-                />
-              </View>
-            </View>
-
-            <View>
-              <Text style={tw`text-xs font-bold text-slate-700 mb-1`}>Vehicle Plate Number *</Text>
-              <View style={tw`bg-white border border-slate-300 rounded-2xl p-3.5 shadow-xs`}>
-                <TextInput
-                  value={plateNumber}
-                  onChangeText={(t) => { setPlateNumber(t); if (error) setError(null); }}
-                  placeholder="e.g. WP BDH-5678"
-                  placeholderTextColor="#94A3B8"
-                  autoCapitalize="characters"
-                  style={tw`text-sm font-semibold text-slate-900 p-0`}
-                />
-              </View>
-            </View>
-          </View>
-
->>>>>>> 85a2985458da56e75b8bfb3bdd27aeb712afa942
           {/* Continue Button */}
           <TouchableOpacity
             activeOpacity={0.85}
             onPress={handleNextStep}
-            disabled={loading}
-            style={[
-              tw`w-full rounded-2xl py-4 flex-row items-center justify-center gap-2 shadow-md mb-3`,
-              { backgroundColor: loading ? '#94A3B8' : '#0B1044' },
-            ]}>
-            {loading ? (
-              <ActivityIndicator color="#FFC72C" size="small" />
-            ) : (
-              <>
-                <Text style={tw`text-white font-extrabold text-base`}>Continue to Step 4</Text>
-                <Ionicons name="arrow-forward" size={18} color="#FFC72C" />
-              </>
-            )}
+            style={tw`w-full bg-[#0B1044] rounded-2xl py-4 flex-row items-center justify-center gap-2 shadow-md mb-3`}>
+            <Text style={tw`text-white font-extrabold text-base`}>Continue to Step 4</Text>
+            <Ionicons name="arrow-forward" size={18} color="#FFC72C" />
           </TouchableOpacity>
-<<<<<<< HEAD
-=======
 
           <TouchableOpacity
             activeOpacity={0.8}
@@ -488,7 +371,6 @@ export default function RegisterStep3Screen() {
             style={tw`w-full bg-white border border-[#0B1044] rounded-2xl py-3.5 items-center justify-center mb-8`}>
             <Text style={tw`text-[#0B1044] font-extrabold text-sm`}>Back to Address Details</Text>
           </TouchableOpacity>
->>>>>>> 85a2985458da56e75b8bfb3bdd27aeb712afa942
         </ScrollView>
       </View>
     </SafeAreaView>

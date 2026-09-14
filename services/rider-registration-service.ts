@@ -34,6 +34,7 @@ export interface RiderRegistrationDraft {
   accountHolder?: string;
   accountNumber?: string;
   branchCode?: string;
+  password?: string;
 }
 
 class RiderRegistrationService {
@@ -54,10 +55,11 @@ class RiderRegistrationService {
     this.draft = {};
   }
 
-  async submitRegistration(password: string = 'RiderPass123!'): Promise<any> {
+  async submitRegistration(password?: string): Promise<any> {
+    const userPassword = password || this.draft.password || 'RiderPass123!';
     const payload = {
-      email: this.draft.email || `${(this.draft.phone || 'rider').replace(/\+s/g, '')}@yaalu.com`,
-      password: password,
+      email: this.draft.email || `${(this.draft.phone || 'rider').replace(/[\+\s]/g, '')}@yaalu.com`,
+      password: userPassword,
       role: 'RIDER',
       firstName: this.draft.firstName,
       lastName: this.draft.lastName,
