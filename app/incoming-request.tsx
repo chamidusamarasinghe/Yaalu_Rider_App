@@ -12,6 +12,8 @@ import { Ionicons, Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tw from '@/lib/tw';
 
+import InteractiveMap from '@/components/InteractiveMap';
+
 export default function IncomingRequestScreen() {
   const router = useRouter();
 
@@ -44,27 +46,27 @@ export default function IncomingRequestScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={tw`pb-6`}>
         {/* Map Preview Area */}
         <View style={tw`w-full h-56 bg-blue-50 relative overflow-hidden border-b border-slate-200`}>
-          {/* Map Image Graphic */}
-          <Image
-            source={require('@/assets/images/navigate-pickup.png')}
-            style={tw`w-full h-full`}
-            resizeMode="cover"
+          <InteractiveMap
+            height={220}
+            center={{ latitude: 6.9271, longitude: 79.8612 }}
+            zoom={14}
+            markers={[
+              { id: 'pickup', latitude: 6.9271, longitude: 79.8612, title: 'Central Gourmet Hub (Pickup)', type: 'pickup' },
+              { id: 'drop', latitude: 6.9150, longitude: 79.8520, title: 'Lekki Phase 1 (Drop-off)', type: 'drop' },
+              { id: 'driver', latitude: 6.9210, longitude: 79.8580, title: 'My Location (Rider)', type: 'driver' },
+            ]}
+            showRoute={true}
           />
 
           {/* Floating Pickup Location Card */}
-          <View style={tw`absolute top-3 left-3 bg-white rounded-xl p-2.5 shadow-md border border-slate-200 w-56`}>
+          <View style={tw`absolute top-3 left-3 bg-white/95 rounded-xl p-2.5 shadow-md border border-slate-200 w-56`}>
             <View style={tw`flex-row items-center gap-1.5`}>
               <View style={tw`w-2.5 h-2.5 rounded-full bg-blue-600`} />
-              <Text style={tw`text-[10px] font-bold text-blue-600`}>Pickup</Text>
+              <Text style={tw`text-[10px] font-bold text-blue-600`}>Pickup Point</Text>
             </View>
             <Text style={tw`text-[11px] font-extrabold text-slate-900 mt-0.5`}>241 Central Gourmet Hub,</Text>
             <Text style={tw`text-[10px] text-slate-500`}>Victoria Island</Text>
           </View>
-
-          {/* Expand Map Button */}
-          <TouchableOpacity style={tw`absolute top-3 right-3 w-9 h-9 bg-white rounded-xl items-center justify-center shadow-md border border-slate-200`}>
-            <Feather name="maximize-2" size={18} color="#1E293B" />
-          </TouchableOpacity>
         </View>
 
         {/* Request Bottom Sheet Card */}

@@ -6,6 +6,8 @@ import { Ionicons, Feather, FontAwesome5 } from '@expo/vector-icons';
 import tw from '@/lib/tw';
 import { fareApi } from '@/services/api';
 
+import InteractiveMap from '@/components/InteractiveMap';
+
 export default function BidRequestScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -124,9 +126,17 @@ export default function BidRequestScreen() {
                 Multiple drivers can accept this hire and compete through bidding.
               </Text>
             </View>
-            <View style={tw`w-24 h-32 bg-slate-200 rounded-xl ml-4 items-center justify-center`}>
-              <Ionicons name="navigate-circle-outline" size={40} color="#0B1044" />
-              <Text style={tw`text-[9px] font-bold text-slate-500 mt-1`}>{distanceKm} KM</Text>
+            <View style={tw`w-36 h-32 rounded-2xl overflow-hidden shadow-xs border border-slate-200 ml-3`}>
+              <InteractiveMap
+                height={128}
+                center={{ latitude: 6.9271, longitude: 79.8612 }}
+                zoom={11}
+                markers={[
+                  { id: 'p1', latitude: 6.9271, longitude: 79.8612, title: 'Colombo (Pickup)', type: 'pickup' },
+                  { id: 'd1', latitude: 7.2008, longitude: 79.8737, title: 'Negombo (Drop)', type: 'drop' },
+                ]}
+                showRoute={true}
+              />
             </View>
           </View>
         </View>

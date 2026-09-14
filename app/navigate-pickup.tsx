@@ -13,18 +13,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, Feather, FontAwesome5 } from '@expo/vector-icons';
 import tw from '@/lib/tw';
 
+import InteractiveMap from '@/components/InteractiveMap';
+
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const MAP_H = SCREEN_H * 0.52;
-
-/** A road strip drawn with absolute-positioned Views */
-function Road({ style }: { style: object }) {
-  return <View style={[tw`absolute bg-white opacity-80`, style]} />;
-}
-
-/** A city block */
-function Block({ style }: { style: object }) {
-  return <View style={[tw`absolute rounded-md bg-[#C8D8C8] opacity-70`, style]} />;
-}
 
 export default function NavigateToPickupScreen() {
   const router = useRouter();
@@ -34,93 +26,18 @@ export default function NavigateToPickupScreen() {
     <View style={tw`flex-1 bg-white`}>
       <RNStatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
 
-      {/* ─── Mock Map ─── */}
-      <View style={[{ height: MAP_H }, tw`bg-[#DDE8DD] overflow-hidden`]}>
-
-        {/* Ocean / sea left panel */}
-        <View style={[tw`absolute bg-[#B8CFEA]`, { left: 0, top: 0, width: SCREEN_W * 0.28, height: MAP_H }]} />
-
-        {/* Horizontal roads */}
-        <Road style={{ left: 0, top: MAP_H * 0.28, width: SCREEN_W, height: 8, borderRadius: 2 }} />
-        <Road style={{ left: 0, top: MAP_H * 0.52, width: SCREEN_W, height: 6, borderRadius: 2 }} />
-        <Road style={{ left: 0, top: MAP_H * 0.72, width: SCREEN_W, height: 5, borderRadius: 2 }} />
-
-        {/* Vertical roads */}
-        <Road style={{ left: SCREEN_W * 0.38, top: 0, width: 8, height: MAP_H, borderRadius: 2 }} />
-        <Road style={{ left: SCREEN_W * 0.58, top: 0, width: 6, height: MAP_H, borderRadius: 2 }} />
-        <Road style={{ left: SCREEN_W * 0.72, top: 0, width: 5, height: MAP_H, borderRadius: 2 }} />
-
-        {/* Diagonal coastal road */}
-        <View
-          style={[
-            tw`absolute bg-white opacity-70`,
-            {
-              left: SCREEN_W * 0.25,
-              top: 0,
-              width: 7,
-              height: MAP_H,
-              borderRadius: 3,
-              transform: [{ rotate: '4deg' }],
-            },
+      {/* ─── Live Interactive Map ─── */}
+      <View style={[{ height: MAP_H }, tw`bg-[#DDE8DD] overflow-hidden relative`]}>
+        <InteractiveMap
+          height={MAP_H}
+          center={{ latitude: 6.9271, longitude: 79.8612 }}
+          zoom={14}
+          markers={[
+            { id: 'rider-location', latitude: 6.9150, longitude: 79.8550, title: 'Rider Location', type: 'driver' },
+            { id: 'pickup-shop', latitude: 6.9271, longitude: 79.8612, title: 'Colombo City Center (Pickup)', type: 'pickup' },
           ]}
+          showRoute={true}
         />
-
-        {/* City blocks */}
-        <Block style={{ left: SCREEN_W * 0.42, top: MAP_H * 0.05, width: 50, height: 20 }} />
-        <Block style={{ left: SCREEN_W * 0.62, top: MAP_H * 0.08, width: 60, height: 18 }} />
-        <Block style={{ left: SCREEN_W * 0.62, top: MAP_H * 0.33, width: 55, height: 16 }} />
-        <Block style={{ left: SCREEN_W * 0.42, top: MAP_H * 0.33, width: 12, height: 16 }} />
-        <Block style={{ left: SCREEN_W * 0.42, top: MAP_H * 0.57, width: 12, height: 12 }} />
-        <Block style={{ left: SCREEN_W * 0.62, top: MAP_H * 0.57, width: 55, height: 12 }} />
-        <Block style={{ left: SCREEN_W * 0.75, top: MAP_H * 0.77, width: 40, height: 18 }} />
-        <Block style={{ left: SCREEN_W * 0.42, top: MAP_H * 0.77, width: 12, height: 18 }} />
-
-        {/* ─── Amber route line (series of rotated bars) ─── */}
-        {/* Simulate a curved route from bottom-center up to pickup pin */}
-        <View style={[styles.routeSeg, {
-          left: SCREEN_W * 0.44, top: MAP_H * 0.62,
-          height: MAP_H * 0.17, width: 7,
-          transform: [{ rotate: '-5deg' }],
-        }]} />
-        <View style={[styles.routeSeg, {
-          left: SCREEN_W * 0.43, top: MAP_H * 0.45,
-          height: MAP_H * 0.18, width: 7,
-          transform: [{ rotate: '-3deg' }],
-        }]} />
-        <View style={[styles.routeSeg, {
-          left: SCREEN_W * 0.41, top: MAP_H * 0.27,
-          height: MAP_H * 0.19, width: 7,
-          transform: [{ rotate: '2deg' }],
-        }]} />
-
-        {/* ─── Car marker (bottom of route) ─── */}
-        <View style={[tw`absolute items-center justify-center w-11 h-11 rounded-full bg-[#0B1044]`, {
-          left: SCREEN_W * 0.44 - 22, top: MAP_H * 0.75,
-          shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 6,
-          elevation: 8,
-        }]}>
-          <FontAwesome5 name="car-side" size={15} color="#FFC72C" />
-        </View>
-        {/* Pulse ring */}
-        <View style={[tw`absolute rounded-full border-2 border-[#FFC72C] opacity-30`, {
-          left: SCREEN_W * 0.44 - 30, top: MAP_H * 0.75 - 8,
-          width: 58, height: 58,
-        }]} />
-
-        {/* ─── Pickup pin + callout ─── */}
-        <View style={[tw`absolute items-center`, { left: SCREEN_W * 0.38, top: MAP_H * 0.1 }]}>
-          <View style={tw`bg-[#FFC72C] px-3 py-1.5 rounded-xl shadow-lg mb-1`}>
-            <Text style={tw`text-[11px] font-extrabold text-slate-900`}>Beginns (3.2 km)</Text>
-          </View>
-          <Ionicons name="location" size={28} color="#FFC72C" />
-        </View>
-
-        {/* Compass */}
-        <View style={[tw`absolute right-4 bottom-4 w-10 h-10 rounded-full bg-white/95 items-center justify-center`, {
-          shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 4, elevation: 3,
-        }]}>
-          <Feather name="compass" size={18} color="#475569" />
-        </View>
 
         {/* ─── Top header overlay ─── */}
         <View style={[tw`absolute left-0 right-0 px-4 flex-row items-center`, { top: insets.top + 8 }]}>

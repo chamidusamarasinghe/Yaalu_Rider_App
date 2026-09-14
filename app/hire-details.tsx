@@ -5,6 +5,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, Feather, FontAwesome5 } from '@expo/vector-icons';
 import tw from '@/lib/tw';
 
+import InteractiveMap from '@/components/InteractiveMap';
+
 export default function HireDetailsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -104,32 +106,38 @@ export default function HireDetailsScreen() {
 
         {/* Map & Location Card */}
         <View style={tw`bg-white rounded-3xl p-4 mb-4 border border-slate-200 shadow-sm`}>
-          <View style={tw`flex-row mb-4`}>
-            <View style={tw`flex-1 justify-center`}>
-              <View style={tw`flex-row items-start mb-4`}>
-                <View style={tw`w-8 h-8 rounded-full bg-emerald-50 items-center justify-center mr-3`}>
-                  <View style={tw`w-2 h-2 rounded-full bg-emerald-500`} />
-                </View>
-                <View style={tw`flex-1`}>
-                  <Text style={tw`text-[10px] text-slate-500 uppercase font-bold`}>Pickup Location</Text>
-                  <Text style={tw`text-sm font-extrabold text-slate-900`}>Colombo City Center</Text>
-                  <Text style={tw`text-[10px] text-slate-500 mt-0.5`}>Lotus Road, Colombo 01</Text>
-                </View>
-              </View>
+          <View style={tw`w-full h-44 rounded-2xl overflow-hidden mb-4 border border-slate-200 shadow-xs`}>
+            <InteractiveMap
+              height={176}
+              center={{ latitude: 6.9271, longitude: 79.8612 }}
+              zoom={11}
+              markers={[
+                { id: 'p', latitude: 6.9271, longitude: 79.8612, title: 'Colombo (Pickup)', type: 'pickup' },
+                { id: 'd', latitude: 7.2008, longitude: 79.8737, title: 'Negombo (Drop)', type: 'drop' },
+              ]}
+              showRoute={true}
+            />
+          </View>
 
-              <View style={tw`flex-row items-start`}>
-                <View style={tw`w-8 h-8 rounded-full bg-red-50 items-center justify-center mr-3`}>
-                  <View style={tw`w-2 h-2 rounded-full bg-red-500`} />
-                </View>
-                <View style={tw`flex-1`}>
-                  <Text style={tw`text-[10px] text-slate-500 uppercase font-bold`}>Destination</Text>
-                  <Text style={tw`text-sm font-extrabold text-slate-900`}>Negombo</Text>
-                  <Text style={tw`text-[10px] text-slate-500 mt-0.5`}>Negombo Main Road, Negombo</Text>
-                </View>
-              </View>
+          <View style={tw`flex-row items-start mb-3`}>
+            <View style={tw`w-8 h-8 rounded-full bg-emerald-50 items-center justify-center mr-3`}>
+              <View style={tw`w-2 h-2 rounded-full bg-emerald-500`} />
             </View>
-            <View style={tw`w-24 h-28 bg-slate-200 rounded-xl items-center justify-center`}>
-              <Ionicons name="navigate-circle-outline" size={36} color="#0B1044" />
+            <View style={tw`flex-1`}>
+              <Text style={tw`text-[10px] text-slate-500 uppercase font-bold`}>Pickup Location</Text>
+              <Text style={tw`text-sm font-extrabold text-slate-900`}>Colombo City Center</Text>
+              <Text style={tw`text-[10px] text-slate-500 mt-0.5`}>Lotus Road, Colombo 01</Text>
+            </View>
+          </View>
+
+          <View style={tw`flex-row items-start mb-2`}>
+            <View style={tw`w-8 h-8 rounded-full bg-red-50 items-center justify-center mr-3`}>
+              <View style={tw`w-2 h-2 rounded-full bg-red-500`} />
+            </View>
+            <View style={tw`flex-1`}>
+              <Text style={tw`text-[10px] text-slate-500 uppercase font-bold`}>Destination</Text>
+              <Text style={tw`text-sm font-extrabold text-slate-900`}>Negombo</Text>
+              <Text style={tw`text-[10px] text-slate-500 mt-0.5`}>Negombo Main Road, Negombo</Text>
             </View>
           </View>
 

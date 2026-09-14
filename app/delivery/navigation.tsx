@@ -11,6 +11,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons, Feather, FontAwesome5 } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tw from '@/lib/tw';
+import InteractiveMap from '@/components/InteractiveMap';
 
 export default function LiveNavigationScreen() {
   const router = useRouter();
@@ -56,15 +57,20 @@ export default function LiveNavigationScreen() {
 
         {/* Live Map Area */}
         <View style={tw`w-full h-80 bg-slate-100 relative overflow-hidden border-b border-slate-200`}>
-          {/* Map Route Image */}
-          <Image
-            source={require('@/assets/images/live-navigation.png')}
-            style={tw`w-full h-full`}
-            resizeMode="cover"
+          <InteractiveMap
+            height={320}
+            center={{ latitude: 6.9271, longitude: 79.8612 }}
+            zoom={14}
+            markers={[
+              { id: 'pickup-loc', latitude: 6.9271, longitude: 79.8612, title: 'Blueberry Bakery (Pickup)', type: 'pickup' },
+              { id: 'driver-loc', latitude: 6.9210, longitude: 79.8580, title: 'Rider Location', type: 'driver' },
+              { id: 'drop-loc', latitude: 6.9150, longitude: 79.8520, title: '42nd Maple Street (Drop)', type: 'drop' },
+            ]}
+            showRoute={true}
           />
 
           {/* Turn-by-Turn Instruction Box (Top Left) */}
-          <View style={tw`absolute top-4 left-4 bg-white rounded-2xl p-3.5 shadow-lg border border-slate-200 w-52`}>
+          <View style={tw`absolute top-4 left-4 bg-white/95 rounded-2xl p-3.5 shadow-lg border border-slate-200 w-52`}>
             <Text style={tw`text-[10px] font-bold text-blue-600`}>Next Turn In</Text>
             <View style={tw`flex-row items-center justify-between mt-0.5`}>
               <Text style={tw`text-2xl font-black text-slate-900`}>250 m</Text>
@@ -75,21 +81,8 @@ export default function LiveNavigationScreen() {
             <Text style={tw`text-[10px] text-slate-500 mt-1`}>Turn right onto Maple Street</Text>
           </View>
 
-          {/* Floating Controls (Top Right) */}
-          <View style={tw`absolute top-4 right-4 gap-2`}>
-            <TouchableOpacity style={tw`w-10 h-10 bg-white rounded-xl items-center justify-center shadow-md border border-slate-200`}>
-              <Ionicons name="volume-mute-outline" size={20} color="#475569" />
-            </TouchableOpacity>
-            <TouchableOpacity style={tw`w-10 h-10 bg-white rounded-xl items-center justify-center shadow-md border border-slate-200`}>
-              <Ionicons name="car-outline" size={20} color="#475569" />
-            </TouchableOpacity>
-            <TouchableOpacity style={tw`w-10 h-10 bg-white rounded-xl items-center justify-center shadow-md border border-slate-200`}>
-              <Ionicons name="navigate-outline" size={20} color="#475569" />
-            </TouchableOpacity>
-          </View>
-
           {/* Speedometer Badge (Bottom Left) */}
-          <View style={tw`absolute bottom-4 left-4 bg-white rounded-2xl px-3 py-2 shadow-md border border-slate-200 items-center`}>
+          <View style={tw`absolute bottom-4 left-4 bg-white/95 rounded-2xl px-3 py-2 shadow-md border border-slate-200 items-center`}>
             <Text style={tw`text-base font-black text-blue-700`}>38</Text>
             <Text style={tw`text-[8px] font-bold text-slate-400`}>km/h</Text>
           </View>

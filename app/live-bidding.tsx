@@ -4,6 +4,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, Feather, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import tw from '@/lib/tw';
+import InteractiveMap from '@/components/InteractiveMap';
 
 export default function LiveBiddingScreen() {
   const router = useRouter();
@@ -177,7 +178,18 @@ export default function LiveBiddingScreen() {
             <Text style={tw`text-sm font-extrabold text-slate-900`}>Hire Details</Text>
           </View>
 
-          <View style={tw`w-full h-32 bg-slate-200 rounded-2xl mb-4`} />
+          <View style={tw`w-full h-44 rounded-2xl overflow-hidden mb-4 border border-slate-200 shadow-xs`}>
+            <InteractiveMap
+              height={176}
+              center={{ latitude: 6.9271, longitude: 79.8612 }}
+              zoom={11}
+              markers={[
+                { id: 'lb_p', latitude: 6.9271, longitude: 79.8612, title: 'Colombo (Pickup)', type: 'pickup' },
+                { id: 'lb_d', latitude: 7.2008, longitude: 79.8737, title: 'Negombo (Drop)', type: 'drop' },
+              ]}
+              showRoute={true}
+            />
+          </View>
 
           <View style={tw`mb-5`}>
             <View style={tw`flex-row items-center mb-4`}>
