@@ -7,56 +7,16 @@ import {
   ScrollView,
   StatusBar as RNStatusBar,
   Alert,
-<<<<<<< HEAD
   Modal,
   FlatList,
-=======
   ActivityIndicator,
->>>>>>> 85a2985458da56e75b8bfb3bdd27aeb712afa942
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tw from '@/lib/tw';
-<<<<<<< HEAD
-import { riderRegistrationService } from '@/services/rider-registration-service';
-import { SRI_LANKA_MAIN_CITIES } from '@/constants/cities';
-
-export default function RegisterStep2Screen() {
-  const router = useRouter();
-  const draft = riderRegistrationService.getDraft();
-
-  const [email, setEmail] = useState(draft.email || '');
-  const [address, setAddress] = useState(draft.address || '');
-  const [city, setCity] = useState(draft.city || '');
-
-  // City Picker Modal State
-  const [isCityModalVisible, setIsCityModalVisible] = useState(false);
-  const [citySearchQuery, setCitySearchQuery] = useState('');
-
-  const filteredCities = SRI_LANKA_MAIN_CITIES.filter((c) =>
-    c.toLowerCase().includes(citySearchQuery.toLowerCase()),
-  );
-
-  const handleNextStep = () => {
-    if (!address.trim()) {
-      Alert.alert('Validation Error ⚠️', 'Please enter your Home Address.');
-      return;
-    }
-    if (!city) {
-      Alert.alert('Validation Error ⚠️', 'Please select your operating City from the list.');
-      return;
-    }
-
-    riderRegistrationService.setDraft({
-      email: email.trim(),
-      address: address.trim(),
-      city: city,
-    });
-
-    router.push('/register/step3');
-=======
 import riderApi, { saveRegistrationDraft, getRegistrationDraft } from '@/services/api';
+import { SRI_LANKA_MAIN_CITIES } from '@/constants/cities';
 
 export default function RegisterStep2Screen() {
   const router = useRouter();
@@ -66,6 +26,14 @@ export default function RegisterStep2Screen() {
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // City Picker Modal State
+  const [isCityModalVisible, setIsCityModalVisible] = useState(false);
+  const [citySearchQuery, setCitySearchQuery] = useState('');
+
+  const filteredCities = SRI_LANKA_MAIN_CITIES.filter((c) =>
+    c.toLowerCase().includes(citySearchQuery.toLowerCase()),
+  );
 
   useEffect(() => {
     (async () => {
@@ -81,6 +49,15 @@ export default function RegisterStep2Screen() {
 
   const handleNextStep = async () => {
     setError(null);
+    if (!address.trim()) {
+      setError('Please enter your home address.');
+      return;
+    }
+    if (!city) {
+      setError('Please select your operating city.');
+      return;
+    }
+
     const payload = {
       phone,
       mobile: phone,
@@ -102,7 +79,6 @@ export default function RegisterStep2Screen() {
     } finally {
       setLoading(false);
     }
->>>>>>> 85a2985458da56e75b8bfb3bdd27aeb712afa942
   };
 
   return (
@@ -143,15 +119,9 @@ export default function RegisterStep2Screen() {
           <View style={tw`bg-white rounded-3xl p-5 border border-slate-200 shadow-xs mb-6 gap-4`}>
             <View style={tw`flex-row items-center gap-3 border-b border-slate-100 pb-3`}>
               <View style={tw`w-9 h-9 rounded-xl bg-blue-50 items-center justify-center`}>
-<<<<<<< HEAD
-                <Ionicons name="location-outline" size={20} color="#2563EB" />
-              </View>
-              <Text style={tw`text-lg font-black text-slate-900`}>Contact & Address</Text>
-=======
                 <Ionicons name="location-outline" size={20} color="#0B1044" />
               </View>
               <Text style={tw`text-lg font-black text-slate-900`}>Address Details</Text>
->>>>>>> 85a2985458da56e75b8bfb3bdd27aeb712afa942
             </View>
 
             {/* Email Address */}
@@ -163,12 +133,8 @@ export default function RegisterStep2Screen() {
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
-<<<<<<< HEAD
-                  placeholder="e.g. rider@yaalu.com"
-=======
                   autoCapitalize="none"
                   placeholder="e.g. rider@example.com"
->>>>>>> 85a2985458da56e75b8bfb3bdd27aeb712afa942
                   placeholderTextColor="#94A3B8"
                   style={tw`flex-1 text-sm font-semibold text-slate-900 p-0`}
                 />
@@ -194,24 +160,9 @@ export default function RegisterStep2Screen() {
             <View>
               <Text style={tw`text-xs font-bold text-slate-600 mb-1.5`}>Operating City / Region *</Text>
               <TouchableOpacity
-<<<<<<< HEAD
                 activeOpacity={0.75}
                 onPress={() => setIsCityModalVisible(true)}
                 style={tw`flex-row items-center justify-between bg-slate-50 border border-slate-200 rounded-2xl px-3.5 py-3.5`}>
-=======
-                activeOpacity={0.7}
-                onPress={() =>
-                  Alert.alert('Select City', 'Choose your operating city:', [
-                    { text: 'Colombo', onPress: () => setCity('Colombo') },
-                    { text: 'Gampaha', onPress: () => setCity('Gampaha') },
-                    { text: 'Kandy', onPress: () => setCity('Kandy') },
-                    { text: 'Galle', onPress: () => setCity('Galle') },
-                    { text: 'Matara', onPress: () => setCity('Matara') },
-                    { text: 'Negombo', onPress: () => setCity('Negombo') },
-                  ])
-                }
-                style={tw`flex-row items-center justify-between bg-slate-50 border border-slate-200 rounded-2xl px-3.5 py-3`}>
->>>>>>> 85a2985458da56e75b8bfb3bdd27aeb712afa942
                 <View style={tw`flex-row items-center gap-2.5`}>
                   <Ionicons name="business-outline" size={18} color="#2563EB" />
                   <Text style={tw`text-sm font-semibold ${city ? 'text-slate-900' : 'text-slate-400'}`}>
@@ -245,13 +196,8 @@ export default function RegisterStep2Screen() {
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={() => router.back()}
-<<<<<<< HEAD
-            style={tw`w-full bg-white border border-blue-600 rounded-2xl py-3.5 items-center justify-center mb-4`}>
-            <Text style={tw`text-blue-600 font-extrabold text-sm`}>Back to Personal Details</Text>
-=======
             style={tw`w-full bg-white border border-[#0B1044] rounded-2xl py-3.5 items-center justify-center mb-8`}>
             <Text style={tw`text-[#0B1044] font-extrabold text-sm`}>Back to Personal Details</Text>
->>>>>>> 85a2985458da56e75b8bfb3bdd27aeb712afa942
           </TouchableOpacity>
         </ScrollView>
       </View>

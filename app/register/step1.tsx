@@ -7,134 +7,14 @@ import {
   ScrollView,
   StatusBar as RNStatusBar,
   Alert,
-<<<<<<< HEAD
-  Image,
-  ActivityIndicator,
-=======
   ActivityIndicator,
   Image,
->>>>>>> 85a2985458da56e75b8bfb3bdd27aeb712afa942
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import tw from '@/lib/tw';
-<<<<<<< HEAD
-import { riderRegistrationService } from '@/services/rider-registration-service';
-import { uploadService } from '@/services/upload-service';
-
-export default function RegisterStep1Screen() {
-  const router = useRouter();
-  const draft = riderRegistrationService.getDraft();
-
-  const [firstName, setFirstName] = useState(draft.firstName || '');
-  const [lastName, setLastName] = useState(draft.lastName || '');
-  const [phone, setPhone] = useState(draft.phone || draft.phoneNumber || '');
-  const [nic, setNic] = useState(draft.nicNumber || '');
-  const [profilePicture, setProfilePicture] = useState<string | null>(draft.profilePicture || null);
-  const [isUploading, setIsUploading] = useState(false);
-
-  const processAndUploadPhoto = async (localUri: string) => {
-    setIsUploading(true);
-    setProfilePicture(localUri);
-
-    try {
-      // Security Check: Max 5MB limit for photo upload
-      const res = await uploadService.uploadMedia(localUri, 'yaalu/riders/profiles', 5 * 1024 * 1024);
-      if (res && res.url) {
-        setProfilePicture(res.url);
-        Alert.alert('Upload Success ☁️', 'Profile photo uploaded to Cloudinary CDN successfully!');
-      }
-    } catch (err: any) {
-      console.warn('[Cloudinary Profile Upload Error]:', err?.message || err);
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const handlePickImage = () => {
-    Alert.alert('Profile Photo 📷', 'Select photo source for Cloudinary upload (Max 5MB):', [
-      {
-        text: 'Take Photo (Camera)',
-        onPress: async () => {
-          const { status } = await ImagePicker.requestCameraPermissionsAsync();
-          if (status !== 'granted') {
-            Alert.alert('Permission Required', 'Camera access is required to take a photo.');
-            return;
-          }
-          const result = await ImagePicker.launchCameraAsync({
-            mediaTypes: 'images',
-            allowsEditing: true,
-            aspect: [1, 1],
-            quality: 0.4,
-            base64: true,
-          });
-          if (!result.canceled && result.assets && result.assets[0]) {
-            const uriOrBase64 = result.assets[0].base64
-              ? `data:image/jpeg;base64,${result.assets[0].base64}`
-              : result.assets[0].uri;
-            await processAndUploadPhoto(uriOrBase64);
-          }
-        },
-      },
-      {
-        text: 'Choose from Gallery',
-        onPress: async () => {
-          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-          if (status !== 'granted') {
-            Alert.alert('Permission Required', 'Photo library access is required to select a photo.');
-            return;
-          }
-          const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: 'images',
-            allowsEditing: true,
-            aspect: [1, 1],
-            quality: 0.4,
-            base64: true,
-          });
-          if (!result.canceled && result.assets && result.assets[0]) {
-            const uriOrBase64 = result.assets[0].base64
-              ? `data:image/jpeg;base64,${result.assets[0].base64}`
-              : result.assets[0].uri;
-            await processAndUploadPhoto(uriOrBase64);
-          }
-        },
-      },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
-  };
-
-  const handleNextStep = () => {
-    if (!firstName.trim()) {
-      Alert.alert('Validation Error ⚠️', 'Please enter your First Name.');
-      return;
-    }
-    if (!lastName.trim()) {
-      Alert.alert('Validation Error ⚠️', 'Please enter your Last Name.');
-      return;
-    }
-    if (!phone.trim() || phone.trim().length < 9) {
-      Alert.alert('Validation Error ⚠️', 'Please enter a valid Phone Number.');
-      return;
-    }
-    if (!nic.trim() || nic.trim().length < 9) {
-      Alert.alert('Validation Error ⚠️', 'Please enter a valid NIC Number.');
-      return;
-    }
-
-    // Save step 1 draft state
-    riderRegistrationService.setDraft({
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      phone: phone.trim(),
-      phoneNumber: phone.trim(),
-      nicNumber: nic.trim(),
-      profilePicture: profilePicture || undefined,
-    });
-
-    router.push('/register/step2');
-=======
 import riderApi, { saveRegistrationDraft, getRegistrationDraft, uploadApi } from '@/services/api';
 
 export default function RegisterStep1Screen() {
@@ -238,7 +118,6 @@ export default function RegisterStep1Screen() {
     } finally {
       setLoading(false);
     }
->>>>>>> 85a2985458da56e75b8bfb3bdd27aeb712afa942
   };
 
   return (
@@ -291,27 +170,6 @@ export default function RegisterStep1Screen() {
             <View style={tw`items-center my-2`}>
               <TouchableOpacity
                 activeOpacity={0.8}
-<<<<<<< HEAD
-                onPress={handlePickImage}
-                style={tw`w-24 h-24 rounded-full border-2 border-dashed border-indigo-400 bg-white items-center justify-center shadow-xs overflow-hidden relative`}>
-                {profilePicture ? (
-                  <Image source={{ uri: profilePicture }} style={tw`w-full h-full rounded-full`} />
-                ) : isUploading ? (
-                  <ActivityIndicator size="small" color="#2563EB" />
-                ) : (
-                  <>
-                    <Ionicons name="camera-outline" size={28} color="#2563EB" />
-                    <Text style={tw`text-[9px] font-extrabold text-indigo-900 mt-1 uppercase`}>PROFILE PHOTO</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-              <Text style={tw`text-[10px] font-bold text-indigo-900 mt-1.5 text-center`} onPress={handlePickImage}>
-                {isUploading
-                  ? 'Uploading photo to Cloudinary...'
-                  : profilePicture
-                  ? 'Photo Uploaded ☁️ (Tap to change)'
-                  : 'Tap to upload profile photo (Cloudinary, Max 5MB)'}
-=======
                 onPress={handlePickPhoto}
                 disabled={uploadingPhoto}
                 style={tw`w-22 h-22 rounded-full border-2 ${photoUri ? 'border-emerald-500' : 'border-dashed border-indigo-400'} bg-white items-center justify-center shadow-xs overflow-hidden relative`}>
@@ -328,7 +186,6 @@ export default function RegisterStep1Screen() {
               </TouchableOpacity>
               <Text style={tw`text-[10px] ${uploadingPhoto ? 'text-blue-600 font-bold' : photoUri ? 'text-emerald-600 font-bold' : 'text-slate-400'} mt-1.5`}>
                 {uploadingPhoto ? 'Uploading to Cloudinary...' : photoUri ? '✓ Photo uploaded to cloud (Tap to change)' : 'Clear photo for your rider profile'}
->>>>>>> 85a2985458da56e75b8bfb3bdd27aeb712afa942
               </Text>
             </View>
 
@@ -385,11 +242,7 @@ export default function RegisterStep1Screen() {
 
             {/* NIC Number Input */}
             <View style={tw`mb-2`}>
-<<<<<<< HEAD
-              <Text style={tw`text-xs font-bold text-slate-700 mb-1`}>NIC Number *</Text>
-=======
               <Text style={tw`text-xs font-bold text-slate-700 mb-1`}>NIC / National ID</Text>
->>>>>>> 85a2985458da56e75b8bfb3bdd27aeb712afa942
               <TextInput
                 value={nic}
                 onChangeText={setNic}
