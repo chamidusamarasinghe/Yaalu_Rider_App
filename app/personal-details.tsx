@@ -16,27 +16,45 @@ import { getSavedRider, riderApi } from '@/services/api';
 export default function PersonalDetailsScreen() {
   const router = useRouter();
   const [rider, setRider] = useState<any>(null);
+  const [userData, setUserData] = useState<any>(null);
 
   useEffect(() => {
     (async () => {
+      // 1. Load from local saved profile
       const saved = await getSavedRider();
       if (saved) setRider(saved);
 
+      // 2. Fetch fresh from backend
+      // getProfile() returns { id, email, fullName, role, rider: { vehicleType, licenseNumber, ... } }
       try {
         const res = await riderApi.getProfile();
-        if (res?.rider) setRider(res.rider);
+        if (res) {
+          // Merge top-level user fields + nested rider profile
+          const merged = {
+            ...(res.rider || {}),         // nested riderProfile fields
+            id: res.id || res.rider?.id,
+            email: res.email,
+            fullName: res.fullName || res.rider?.fullName,
+            role: res.role,
+          };
+          setUserData(res);
+          setRider((prev: any) => ({ ...prev, ...merged }));
+        }
       } catch (e) {
         // use saved fallback
       }
     })();
   }, []);
 
-  const fullName = rider?.fullName || `${rider?.firstName || ''} ${rider?.lastName || ''}`.trim() || 'Harsha Perera';
-  const phone = rider?.phone || rider?.mobile || '+94 77 123 4567';
-  const email = rider?.email || 'rider@yaalu.com';
-  const nic = rider?.nicNumber || '199412345678';
-  const licenseNumber = rider?.licenseNumber || 'B9876543';
-  const address = rider?.address ? `${rider.address}${rider.city ? `, ${rider.city}` : ''}` : 'Colombo, Sri Lanka';
+  const fullName = rider?.fullName || `${rider?.firstName || ''} ${rider?.lastName || ''}`.trim() || '';
+  // Phone: riders who registered via OTP have phone stored as email
+  const phone = rider?.phone || rider?.mobile ||
+    (userData?.email && !userData.email.includes('@') ? userData.email : '') ||
+    (rider?.email && !rider.email.includes('@') ? rider.email : '') || '';
+  const email = rider?.email?.includes('@') ? rider.email : (userData?.email?.includes('@') ? userData.email : '');
+  const nic = rider?.nicNumber || rider?.nic || '';
+  const licenseNumber = rider?.licenseNumber || '';
+  const address = rider?.address ? `${rider.address}${rider.city ? `, ${rider.city}` : ''}` : (rider?.city || '');
 
   return (
     <SafeAreaView style={tw`flex-1 bg-[#FFC72C]`} edges={['top', 'bottom']}>

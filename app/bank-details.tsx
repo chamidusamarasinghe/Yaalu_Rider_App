@@ -18,33 +18,37 @@ import riderApi, { getSavedRider } from '@/services/api';
 export default function BankDetailsScreen() {
   const router = useRouter();
 
-  const [accountHolder, setAccountHolder] = useState('Harsha Perera');
-  const [bankName, setBankName] = useState('Commercial Bank');
-  const [accountNumber, setAccountNumber] = useState('8000123456');
-  const [branchName, setBranchName] = useState('Colombo 05 Branch');
+  const [accountHolder, setAccountHolder] = useState('');
+  const [bankName, setBankName] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
+  const [branchName, setBranchName] = useState('');
   const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
+      // 1. Load from local saved profile first
       const saved = await getSavedRider();
       if (saved) {
-        if (saved.accountHolder || saved.fullName) setAccountHolder(saved.accountHolder || saved.fullName);
-        if (saved.bankName) setBankName(saved.bankName);
-        if (saved.accountNumber) setAccountNumber(saved.accountNumber);
-        if (saved.branchCode) setBranchName(saved.branchCode);
+        setAccountHolder(saved.accountName || saved.accountHolder || saved.fullName || '');
+        setBankName(saved.bankName || '');
+        setAccountNumber(saved.accountNo || saved.accountNumber || '');
+        setBranchName(saved.accountBranch || saved.branchCode || '');
       }
 
+      // 2. Fetch fresh from backend — response is flat: { bankName, accountName, accountNo, accountBranch }
       try {
         const res: any = await riderApi.getBankDetails();
-        if (res?.rider) {
-          if (res.rider.accountHolder) setAccountHolder(res.rider.accountHolder);
-          if (res.rider.bankName) setBankName(res.rider.bankName);
-          if (res.rider.accountNumber) setAccountNumber(res.rider.accountNumber);
-          if (res.rider.branchCode) setBranchName(res.rider.branchCode);
+        if (res) {
+          if (res.accountName) setAccountHolder(res.accountName);
+          if (res.bankName) setBankName(res.bankName);
+          if (res.accountNo) setAccountNumber(res.accountNo);
+          if (res.accountBranch) setBranchName(res.accountBranch);
         }
       } catch (e) {
         // fallback to saved
+      } finally {
+        setLoading(false);
       }
     })();
   }, []);
@@ -55,12 +59,12 @@ export default function BankDetailsScreen() {
         setLoading(true);
         await riderApi.updateBankDetails({
           bankName: bankName.trim(),
-          accountHolder: accountHolder.trim(),
-          accountNumber: accountNumber.trim(),
-          branchCode: branchName.trim(),
+          accountName: accountHolder.trim(),
+          accountNo: accountNumber.trim(),
+          accountBranch: branchName.trim(),
         });
         setIsEditing(false);
-        Alert.alert('Success', 'Bank payout details updated successfully in database!');
+        Alert.alert('Success', 'Bank payout details updated successfully!');
       } catch (e: any) {
         Alert.alert('Error', e.message || 'Failed to update bank details');
       } finally {
