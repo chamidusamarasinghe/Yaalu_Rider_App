@@ -9,6 +9,8 @@ import {
   ActivityIndicator,
   RefreshControl,
   Dimensions,
+  Alert,
+  Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,7 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import tw from '@/lib/tw';
 import riderApi, { getSavedRider } from '@/services/api';
 import InteractiveMap from '@/components/InteractiveMap';
-import { getCurrentRiderLocation, LocationCoords } from '@/lib/location';
+import { checkAndGetRiderLocation, LocationCoords } from '@/lib/location';
 
 const { width: W } = Dimensions.get('window');
 
@@ -90,17 +92,28 @@ export default function RiderDashboardScreen() {
   const fetchAndSetLocation = useCallback(async (updateBackend = true) => {
     setIsLocating(true);
     try {
-      const loc = await getCurrentRiderLocation();
-      if (loc) {
-        setUserLocation(loc);
+      const result = await checkAndGetRiderLocation();
+      if (result.success && result.coords) {
+        setUserLocation(result.coords);
+        setIsOnline(true);
         if (updateBackend) {
-          riderApi.updateLocation(loc.latitude, loc.longitude).catch((err) => {
-            console.warn('Backend location sync note:', err.message);
+          Promise.all([
+            riderApi.updateLocation(result.coords.latitude, result.coords.longitude),
+            riderApi.setStatus('AVAILABLE'),
+          ]).catch((err) => {
+            console.warn('Backend location/status sync note:', err.message);
           });
+        }
+      } else {
+        // Location is OFF or Permission Denied -> Rider MUST remain OFFLINE
+        setIsOnline(false);
+        if (updateBackend) {
+          riderApi.setStatus('OFFLINE').catch(() => {});
         }
       }
     } catch (e) {
       console.warn('Location fetch error:', e);
+      setIsOnline(false);
     } finally {
       setIsLocating(false);
     }
@@ -128,7 +141,6 @@ export default function RiderDashboardScreen() {
       if (profileRes.status === 'fulfilled') {
         const p = profileRes.value as any;
         setRider(p.rider);
-        setIsOnline(p.rider?.status === 'AVAILABLE');
         if (p.rider?.currentLatitude && p.rider?.currentLongitude) {
           setUserLocation({
             latitude: p.rider.currentLatitude,
@@ -155,10 +167,85 @@ export default function RiderDashboardScreen() {
   };
 
   const toggleOnline = async () => {
-    const newStatus = isOnline ? 'OFFLINE' : 'AVAILABLE';
-    setIsOnline(!isOnline);
-    try { await riderApi.setStatus(newStatus); }
-    catch { setIsOnline(isOnline); }
+    // If rider is currently ONLINE and taps toggle to go OFFLINE:
+    if (isOnline) {
+      setIsOnline(false);
+      try {
+        await riderApi.setStatus('OFFLINE');
+      } catch (err) {
+        console.warn('Status update error:', err);
+      }
+      return;
+    }
+
+    // If rider is currently OFFLINE and wants to go ONLINE:
+    setIsLocating(true);
+    const result = await checkAndGetRiderLocation();
+    setIsLocating(false);
+
+    if (!result.success || !result.coords) {
+      setIsOnline(false); // Guarantee toggle stays OFFLINE
+
+      if (result.reason === 'GPS_DISABLED') {
+        Alert.alert(
+          'Turn On Location Services 📍',
+          'Your phone location (GPS) is turned OFF. You MUST turn ON Location Services to switch to Online status and receive ride requests.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Try Again / Turn On',
+              onPress: () => toggleOnline(),
+            },
+          ]
+        );
+      } else if (result.reason === 'PERMISSION_DENIED') {
+        if (result.canAskAgain === false) {
+          Alert.alert(
+            'Location Permission Denied 🔐',
+            'Location permission was previously denied. Please allow location access in phone App Settings to switch to Online status.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Open App Settings',
+                onPress: () => Linking.openSettings(),
+              },
+            ]
+          );
+        } else {
+          Alert.alert(
+            'Location Permission Required 🔐',
+            'Yaalu Rider requires foreground location permission to connect you with nearby delivery requests.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Grant Permission',
+                onPress: () => toggleOnline(),
+              },
+            ]
+          );
+        }
+      } else {
+        Alert.alert(
+          'Location Error ⚠️',
+          result.message || 'Unable to fetch current GPS coordinates. Please turn on location and try again.',
+          [{ text: 'OK' }]
+        );
+      }
+      return;
+    }
+
+    // ONLY IF LOCATION (GPS) IS TURNED ON & PERMISSION GRANTED:
+    setUserLocation(result.coords);
+    setIsOnline(true);
+
+    try {
+      await Promise.all([
+        riderApi.setStatus('AVAILABLE'),
+        riderApi.updateLocation(result.coords.latitude, result.coords.longitude),
+      ]);
+    } catch (err: any) {
+      console.warn('Backend location/status update note:', err?.message || err);
+    }
   };
 
   const earningsAmount = earnings
@@ -173,7 +260,7 @@ export default function RiderDashboardScreen() {
       <View style={tw`bg-[#FFC72C] px-5 pt-3 pb-4 flex-row items-center justify-between`}>
         {/* Avatar + Greeting */}
         <TouchableOpacity onPress={() => router.push('/profile')} style={tw`flex-row items-center gap-3`}>
-          <View style={tw`w-11 h-11 rounded-full border-2 border-[#0B1044] overflow-hidden bg-white shadow-xs`}>
+          <View style={tw`w-11 h-11 rounded-full border-2 border-[#0B1044] overflow-hidden bg-white shadow-sm`}>
             <Image
               source={{ uri: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200' }}
               style={tw`w-full h-full`}
@@ -218,7 +305,32 @@ export default function RiderDashboardScreen() {
           scrollEnabled={scrollEnabled}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: 110 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFC72C" />}>
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFC72C" />}
+        >
+          {/* ── LOCATION REQUIRED BANNER (When Offline) ──────────────── */}
+          {!isOnline && (
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={toggleOnline}
+              style={tw`bg-[#FFC72C] rounded-2xl p-4 flex-row items-center justify-between mb-4 shadow-sm border border-amber-400`}>
+              <View style={tw`flex-row items-center gap-3 flex-1 mr-2`}>
+                <View style={tw`w-10 h-10 rounded-xl bg-[#0B1044] items-center justify-center`}>
+                  <Ionicons name="location-outline" size={20} color="#FFC72C" />
+                </View>
+                <View style={tw`flex-1`}>
+                  <Text style={tw`text-xs font-black text-[#0B1044]`}>
+                    Location Required to Go Online 📍
+                  </Text>
+                  <Text style={tw`text-[11px] font-semibold text-[#0B1044]/80 mt-0.5`}>
+                    Turn on device GPS & grant permission to switch to Online
+                  </Text>
+                </View>
+              </View>
+              <View style={tw`bg-[#0B1044] rounded-xl px-3 py-2`}>
+                <Text style={tw`text-xs font-black text-[#FFC72C]`}>Turn On →</Text>
+              </View>
+            </TouchableOpacity>
+          )}
 
           {/* ── EARNINGS CARD ──────────────────── */}
           <View style={tw`bg-[#0B1044] rounded-3xl overflow-hidden mb-4`}>

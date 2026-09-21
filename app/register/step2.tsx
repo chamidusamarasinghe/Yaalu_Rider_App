@@ -22,6 +22,10 @@ export default function RegisterStep2Screen() {
   const draft = riderRegistrationService.getDraft();
 
   const [email, setEmail] = useState(draft.email || '');
+  const [password, setPassword] = useState(draft.password || '');
+  const [confirmPassword, setConfirmPassword] = useState(draft.password || '');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [address, setAddress] = useState(draft.address || '');
   const [city, setCity] = useState(draft.city || '');
 
@@ -42,11 +46,24 @@ export default function RegisterStep2Screen() {
       Alert.alert('Validation Error ⚠️', 'Please select your operating City from the dropdown list.');
       return;
     }
+    if (!password) {
+      Alert.alert('Validation Error ⚠️', 'Please create an account password.');
+      return;
+    }
+    if (password.length < 6) {
+      Alert.alert('Validation Error ⚠️', 'Password must be at least 6 characters long.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      Alert.alert('Validation Error ⚠️', 'Passwords do not match. Please verify your password.');
+      return;
+    }
 
     riderRegistrationService.setDraft({
       email: email.trim(),
       address: address.trim(),
       city: city,
+      password: password.trim(),
     });
 
     router.push('/register/step3');
@@ -71,7 +88,7 @@ export default function RegisterStep2Screen() {
           <View style={tw`mb-5`}>
             <View style={tw`flex-row justify-between items-center mb-2`}>
               <Text style={tw`text-sm font-extrabold text-[#0B1044]`}>Step 2 of 5</Text>
-              <Text style={tw`text-sm font-bold text-slate-600`}>Location & Address</Text>
+              <Text style={tw`text-sm font-bold text-slate-600`}>Location & Credentials</Text>
             </View>
             <View style={tw`h-2 w-full bg-blue-100 rounded-full overflow-hidden`}>
               <View style={tw`h-full w-2/5 bg-[#0B1044] rounded-full`} />
@@ -79,7 +96,7 @@ export default function RegisterStep2Screen() {
           </View>
 
           <Text style={tw`text-xs font-semibold text-slate-600 mb-5 leading-4.5`}>
-            Specify your operating area and primary residence address so we can assign local ride requests.
+            Specify your residence address, operating city, and create your secure account login password.
           </Text>
 
           {/* Form Floating Label Inputs */}
@@ -127,6 +144,42 @@ export default function RegisterStep2Screen() {
                 </View>
                 <Ionicons name="chevron-down" size={18} color="#64748B" />
               </TouchableOpacity>
+            </View>
+
+            {/* Create Password */}
+            <View style={tw`bg-white border border-slate-300 rounded-2xl px-4 py-3.5 shadow-xs`}>
+              <Text style={tw`text-[11px] font-bold text-[#0B1044] mb-1`}>Create Account Password *</Text>
+              <View style={tw`flex-row items-center justify-between`}>
+                <TextInput
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  placeholder="Minimum 6 characters"
+                  placeholderTextColor="#94A3B8"
+                  style={tw`flex-1 text-sm font-semibold text-slate-900 p-0`}
+                />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={tw`p-1`}>
+                  <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={18} color="#64748B" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Confirm Password */}
+            <View style={tw`bg-white border border-slate-300 rounded-2xl px-4 py-3.5 shadow-xs`}>
+              <Text style={tw`text-[11px] font-bold text-[#0B1044] mb-1`}>Confirm Account Password *</Text>
+              <View style={tw`flex-row items-center justify-between`}>
+                <TextInput
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry={!showConfirmPassword}
+                  placeholder="Re-enter password to confirm"
+                  placeholderTextColor="#94A3B8"
+                  style={tw`flex-1 text-sm font-semibold text-slate-900 p-0`}
+                />
+                <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={tw`p-1`}>
+                  <Ionicons name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'} size={18} color="#64748B" />
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
 

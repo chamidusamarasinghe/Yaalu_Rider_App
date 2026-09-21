@@ -25,9 +25,10 @@ export default function RegisterStep5BankingScreen() {
   );
   const [accountNumber, setAccountNumber] = useState(draft.accountNumber || '');
   const [branchCode, setBranchCode] = useState(draft.branchCode || '');
-  const [password, setPassword] = useState(draft.password || 'YaaluRider@2026');
-  const [confirmPassword, setConfirmPassword] = useState(draft.password || 'YaaluRider@2026');
+  const [password, setPassword] = useState(draft.password || '');
+  const [confirmPassword, setConfirmPassword] = useState(draft.password || '');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleCompleteRegistration = async () => {
@@ -43,9 +44,16 @@ export default function RegisterStep5BankingScreen() {
       Alert.alert('Validation Error ⚠️', 'Please enter Account Number.');
       return;
     }
-
+    if (!password) {
+      Alert.alert('Validation Error ⚠️', 'Please create an account security password.');
+      return;
+    }
+    if (password.length < 6) {
+      Alert.alert('Validation Error ⚠️', 'Password must be at least 6 characters long.');
+      return;
+    }
     if (password !== confirmPassword) {
-      Alert.alert('Validation Error ⚠️', 'Passwords do not match.');
+      Alert.alert('Validation Error ⚠️', 'Passwords do not match. Please verify your password.');
       return;
     }
 
@@ -204,12 +212,31 @@ export default function RegisterStep5BankingScreen() {
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
-                  placeholder="Enter account password"
+                  placeholder="Enter account password (min 6 chars)"
                   placeholderTextColor="#94A3B8"
                   style={tw`flex-1 text-sm font-semibold text-slate-900 p-0`}
                 />
                 <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                   <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={18} color="#64748B" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Confirm Account Password */}
+            <View>
+              <Text style={tw`text-xs font-bold text-slate-600 mb-1.5`}>Confirm Security Password *</Text>
+              <View style={tw`flex-row items-center bg-white border border-slate-300 rounded-2xl px-3.5 py-3.5 gap-2.5 shadow-xs`}>
+                <Ionicons name="shield-outline" size={18} color="#64748B" />
+                <TextInput
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry={!showConfirmPassword}
+                  placeholder="Re-enter password to confirm"
+                  placeholderTextColor="#94A3B8"
+                  style={tw`flex-1 text-sm font-semibold text-slate-900 p-0`}
+                />
+                <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                  <Ionicons name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'} size={18} color="#64748B" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -219,7 +246,7 @@ export default function RegisterStep5BankingScreen() {
           <View style={tw`bg-emerald-100/70 border border-emerald-200 rounded-2xl p-4 flex-row items-start gap-3 mb-6`}>
             <Ionicons name="checkmark-circle" size={20} color="#059669" style={tw`mt-0.5`} />
             <Text style={tw`flex-1 text-xs font-medium text-emerald-900 leading-4.5`}>
-              Your registration profile and Cloudinary URLs will be verified. Submitting accurate data ensures instant account activation.
+              Your registration profile, custom password, and Cloudinary document links will be securely encrypted and stored in PostgreSQL.
             </Text>
           </View>
 
