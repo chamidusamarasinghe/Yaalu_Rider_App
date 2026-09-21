@@ -69,7 +69,7 @@ export const getBaseUrl = (): string => {
   if (typeof window !== 'undefined' && window.location && Platform.OS === 'web') {
     const protocol = window.location.protocol || 'http:';
     const hostname = window.location.hostname || 'localhost';
-    return `${protocol}//${hostname}:3000`;
+    return `${protocol}//${hostname}:3001`;
   }
 
   const hostUri =
@@ -82,11 +82,11 @@ export const getBaseUrl = (): string => {
     const clean = String(hostUri).replace(/^[a-zA-Z]+:\/\//, '');
     const host = clean.split(':')[0].split('/')[0];
     if (host && host !== 'localhost' && host !== '127.0.0.1') {
-      return `http://${host}:3000`;
+      return `http://${host}:3001`;
     }
   }
 
-  return Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://localhost:3000';
+  return Platform.OS === 'android' ? 'http://10.0.2.2:3001' : 'http://localhost:3001';
 };
 
 export const BASE_URL = getBaseUrl();
@@ -198,7 +198,7 @@ export const riderApi = {
       : { mobile: mobileOrEmail, password };
 
     try {
-      const res: any = await request('POST', '/riders/login', payload, false, 4000);
+      const res: any = await request('POST', '/auth/login', payload, false, 4000);
       if (res?.accessToken || res?.token) {
         const token = res.accessToken || res.token;
         await saveToken(token);
