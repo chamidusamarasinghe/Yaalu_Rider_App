@@ -18,10 +18,10 @@ import riderApi, { getSavedRider } from '@/services/api';
 export default function BankDetailsScreen() {
   const router = useRouter();
 
-  const [accountHolder, setAccountHolder] = useState('Harsha Perera');
-  const [bankName, setBankName] = useState('Commercial Bank');
-  const [accountNumber, setAccountNumber] = useState('8000123456');
-  const [branchName, setBranchName] = useState('Colombo 05 Branch');
+  const [accountHolder, setAccountHolder] = useState('');
+  const [bankName, setBankName] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
+  const [branchName, setBranchName] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
 

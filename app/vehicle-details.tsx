@@ -19,9 +19,9 @@ import riderApi, { getSavedRider } from '@/services/api';
 export default function VehicleDetailsScreen() {
   const router = useRouter();
 
-  const [model, setModel] = useState('Honda Grazia 125');
+  const [model, setModel] = useState('');
   const [vehicleType, setVehicleType] = useState('MOTORBIKE');
-  const [plateNumber, setPlateNumber] = useState('WP BCZ-4521');
+  const [plateNumber, setPlateNumber] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {

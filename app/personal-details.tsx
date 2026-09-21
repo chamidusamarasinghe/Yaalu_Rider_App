@@ -31,11 +31,11 @@ export default function PersonalDetailsScreen() {
     })();
   }, []);
 
-  const fullName = rider?.fullName || `${rider?.firstName || ''} ${rider?.lastName || ''}`.trim() || 'Harsha Perera';
-  const phone = rider?.phone || rider?.mobile || '+94 77 123 4567';
-  const email = rider?.email || 'rider@yaalu.com';
-  const nic = rider?.nicNumber || '199412345678';
-  const licenseNumber = rider?.licenseNumber || 'B9876543';
+  const fullName = rider?.fullName || `${rider?.firstName || ''} ${rider?.lastName || ''}`.trim() || 'Rider';
+  const phone = rider?.phone || rider?.mobile || 'Not specified';
+  const email = rider?.email || 'Not specified';
+  const nic = rider?.nicNumber || 'Not specified';
+  const licenseNumber = rider?.licenseNumber || 'Not specified';
   const address = rider?.address ? `${rider.address}${rider.city ? `, ${rider.city}` : ''}` : 'Colombo, Sri Lanka';
 
   return (

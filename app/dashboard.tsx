@@ -81,6 +81,7 @@ export default function RiderDashboardScreen() {
   const [rider, setRider] = useState<any>(null);
   const [earnings, setEarnings] = useState<any>(null);
   const [availableCount, setAvailableCount] = useState(0);
+  const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [userLocation, setUserLocation] = useState<LocationCoords>({
     latitude: 6.9271,
@@ -132,10 +133,11 @@ export default function RiderDashboardScreen() {
         }
       }
 
-      const [profileRes, earningsRes, ordersRes] = await Promise.allSettled([
+      const [profileRes, earningsRes, ordersRes, historyRes] = await Promise.allSettled([
         riderApi.getProfile(),
         riderApi.getEarnings('daily'),
         riderApi.getAvailableOrders(),
+        riderApi.getMyOrders(),
       ]);
 
       if (profileRes.status === 'fulfilled') {
@@ -149,7 +151,8 @@ export default function RiderDashboardScreen() {
         }
       }
       if (earningsRes.status === 'fulfilled') setEarnings(earningsRes.value);
-      if (ordersRes.status === 'fulfilled') setAvailableCount((ordersRes.value as any[]).length);
+      if (ordersRes.status === 'fulfilled') setAvailableCount(Array.isArray(ordersRes.value) ? ordersRes.value.length : 0);
+      if (historyRes.status === 'fulfilled') setRecentOrders(Array.isArray(historyRes.value) ? historyRes.value.slice(0, 4) : []);
     } catch (e) {
       console.warn('Dashboard load error:', e);
     }
@@ -509,29 +512,37 @@ export default function RiderDashboardScreen() {
 
           {/* ── RECENT ACTIVITY ─────────────────── */}
           <Text style={tw`text-xs font-black text-slate-500 uppercase tracking-widest mb-3`}>Recent Activity</Text>
-          <View style={tw`bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden`}>
-            {[
-              { shop: 'Burger King • Bambalapitiya', dest: 'Kollupitiya', time: '12:40 PM', amt: '+LKR 380', icon: 'fast-food-outline', color: '#2563EB', bg: '#DBEAFE' },
-              { shop: 'Keells Super • Nugegoda', dest: 'Nawala', time: '11:15 AM', amt: '+LKR 520', icon: 'bag-handle-outline', color: '#D97706', bg: '#FEF3C7' },
-            ].map((item, idx, arr) => (
-              <View
-                key={idx}
-                style={[
-                  tw`flex-row items-center justify-between px-4 py-3.5`,
-                  idx < arr.length - 1 && tw`border-b border-slate-100`,
-                ]}>
-                <View style={tw`flex-row items-center gap-3 flex-1`}>
-                  <View style={[tw`w-10 h-10 rounded-xl items-center justify-center`, { backgroundColor: item.bg }]}>
-                    <Ionicons name={item.icon as any} size={18} color={item.color} />
+          <View style={tw`bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden mb-6`}>
+            {recentOrders.length > 0 ? (
+              recentOrders.map((item: any, idx: number) => (
+                <View
+                  key={item.id || idx}
+                  style={[
+                    tw`flex-row items-center justify-between px-4 py-3.5`,
+                    idx < recentOrders.length - 1 && tw`border-b border-slate-100`,
+                  ]}>
+                  <View style={tw`flex-row items-center gap-3 flex-1`}>
+                    <View style={tw`w-10 h-10 rounded-xl bg-blue-100 items-center justify-center`}>
+                      <Ionicons name="navigate-outline" size={18} color="#2563EB" />
+                    </View>
+                    <View style={tw`flex-1`}>
+                      <Text style={tw`text-xs font-bold text-slate-900`} numberOfLines={1}>
+                        {item.pickupAddress} → {item.dropoffAddress}
+                      </Text>
+                      <Text style={tw`text-[10px] text-slate-400 mt-0.5`}>
+                        {item.orderNumber} • {item.dateGroup || 'Today'}
+                      </Text>
+                    </View>
                   </View>
-                  <View style={tw`flex-1`}>
-                    <Text style={tw`text-xs font-bold text-slate-900`} numberOfLines={1}>{item.shop}</Text>
-                    <Text style={tw`text-[10px] text-slate-400 mt-0.5`}>→ {item.dest} • {item.time}</Text>
-                  </View>
+                  <Text style={tw`text-sm font-black text-emerald-600 ml-2`}>{item.amount}</Text>
                 </View>
-                <Text style={tw`text-sm font-black text-emerald-600 ml-2`}>{item.amt}</Text>
+              ))
+            ) : (
+              <View style={tw`p-6 items-center justify-center`}>
+                <Ionicons name="receipt-outline" size={24} color="#94A3B8" />
+                <Text style={tw`text-xs font-semibold text-slate-500 mt-1`}>No recent trips recorded yet</Text>
               </View>
-            ))}
+            )}
           </View>
         </ScrollView>
 
