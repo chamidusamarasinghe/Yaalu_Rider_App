@@ -116,10 +116,20 @@ export async function getSavedRider(): Promise<any | null> {
 
 // ─── Temporary Registration Draft Storage ─────────────────────────────────────
 const REG_DRAFT_KEY = 'rider_reg_draft';
+const SENSITIVE_DRAFT_FIELDS = new Set(['accountNumber', 'accountNo']);
+
+function stripSensitiveDraftFields(data: Record<string, any>): Record<string, any> {
+  const sanitized = { ...data };
+  for (const field of SENSITIVE_DRAFT_FIELDS) {
+    delete sanitized[field];
+  }
+  return sanitized;
+}
 
 export async function saveRegistrationDraft(data: Partial<any>): Promise<void> {
-  const current = (await getRegistrationDraft()) || {};
-  const merged = { ...current, ...data };
+  const current = stripSensitiveDraftFields((await getRegistrationDraft()) || {});
+  const incoming = stripSensitiveDraftFields((data || {}) as Record<string, any>);
+  const merged = { ...current, ...incoming };
   await safeStorage.setItem(REG_DRAFT_KEY, JSON.stringify(merged));
 }
 
