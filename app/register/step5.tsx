@@ -108,33 +108,21 @@ export default function RegisterStep5BankingScreen() {
         confirmPassword: confirmPassword.trim(),
       };
 
-      let res: any = null;
-      try {
-        res = await riderApi.registerStep5(payload);
-      } catch (step5Err: any) {
-        console.log('Step 5 register attempt fallback:', step5Err?.message || step5Err);
-        res = await riderApi.register(payload).catch(() => null);
+      const res = await riderApi.registerStep5(payload);
+
+      if (res?.accessToken || res?.token) {
+        const token = res.accessToken || res.token;
+        const rider = res.rider;
+        await saveToken(token);
+        await saveRider(rider);
+        await clearRegistrationDraft();
+        router.replace('/dashboard');
+      } else {
+        throw new Error('Registration failed, please try again.');
       }
-
-      const token = res?.accessToken || res?.token || 'local-reg-jwt-' + Date.now();
-      const rider = res?.rider || {
-        id: 'rider-reg-' + Date.now(),
-        fullName: payload.fullName || `${payload.firstName || 'Rider'} ${payload.lastName || 'Partner'}`.trim(),
-        phone: payload.phone || payload.mobile || '+94771234567',
-        mobile: payload.phone || payload.mobile || '+94771234567',
-        email: payload.email || '',
-        status: 'AVAILABLE',
-        isApproved: true,
-      };
-
-      await saveToken(token);
-      await saveRider(rider);
-      await clearRegistrationDraft();
-
-      router.replace('/dashboard');
     } catch (err: any) {
       console.warn('Registration completion note:', err?.message);
-      router.replace('/dashboard');
+      setError(err.message || 'Failed to complete registration.');
     } finally {
       setLoading(false);
     }
