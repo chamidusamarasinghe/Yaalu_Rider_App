@@ -456,6 +456,15 @@ export const riderApi = {
     return request('GET', `/riders/me/earnings?${params.toString()}`);
   },
 
+  // ─── RIDES / HIRES (RideRequest) ─────────────────────────────
+  async getAvailableRides() {
+    return request('GET', '/deliveries/rides/available', undefined, true);
+  },
+
+  async acceptRide(rideRequestId: string, bidId?: string) {
+    return request('POST', `/deliveries/rides/${rideRequestId}/accept-bid`, { bidId }, true);
+  },
+
   // ─── BANK DETAILS ───────────────────────────────────────────
   async getBankDetails() {
     const path = await withTokenParam('/riders/me/bank');

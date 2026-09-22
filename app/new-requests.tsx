@@ -15,24 +15,30 @@ import { fareApi } from '@/services/api';
 export default function NewRequestsScreen() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('Direct');
-  const [fareRates, setFareRates] = useState<any[]>([]);
-  const [directTrip, setDirectTrip] = useState({
-    distanceKm: 6.8,
-    estMinutes: 24,
-    fare: 3160,
-    riderEarnings: 2844,
-  });
-  const [bidTrip, setBidTrip] = useState({
-    distanceKm: 36.0,
-    startingPrice: 1000,
-    minBid: 900,
-    maxBid: 1200,
-    timeoutSeconds: 120,
-  });
+  const [availableOrders, setAvailableOrders] = useState<any[]>([]);
+  const [availableRides, setAvailableRides] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadLiveFarePricing();
+    fetchRequests();
   }, []);
+
+  const fetchRequests = async () => {
+    setLoading(true);
+    try {
+      const [ordersRes, ridesRes] = await Promise.all([
+        riderApi.getAvailableOrders().catch(() => []),
+        riderApi.getAvailableRides().catch(() => [])
+      ]);
+      setAvailableOrders(Array.isArray(ordersRes) ? ordersRes : []);
+      setAvailableRides(Array.isArray(ridesRes) ? ridesRes : []);
+    } catch (err) {
+      console.warn('Failed to load available requests:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadLiveFarePricing = async () => {
     try {
@@ -63,20 +69,7 @@ export default function NewRequestsScreen() {
     }
   };
 
-  useEffect(() => {
-    if (bidTrip.timeoutSeconds <= 0) return;
-    const interval = setInterval(() => {
-      setBidTrip((prev) => {
-        if (prev.timeoutSeconds <= 1) {
-          clearInterval(interval);
-          return { ...prev, timeoutSeconds: 0 };
-        }
-        return { ...prev, timeoutSeconds: prev.timeoutSeconds - 1 };
-      });
-    }, 1000);
 
-    return () => clearInterval(interval);
-  }, [bidTrip.timeoutSeconds]);
 
   return (
     <SafeAreaView style={tw`flex-1 bg-[#FFC72C]`} edges={['top', 'bottom']}>
@@ -131,207 +124,113 @@ export default function NewRequestsScreen() {
 
         {activeTab === 'Direct' ? (
           <>
-            {/* CARD 1: High Pay */}
-            <View style={tw`bg-white rounded-3xl p-4 border border-slate-200 shadow-sm mb-4`}>
-              <View style={tw`flex-row justify-between items-center mb-3`}>
-                <View style={tw`bg-emerald-100 px-3 py-1 rounded-full`}>
-                  <Text style={tw`text-[10px] font-extrabold text-emerald-800`}>High Pay</Text>
-                </View>
-                <Text style={tw`text-[10px] font-bold text-slate-400`}>Order ID: #YA-4589</Text>
+            {availableOrders.length === 0 && !loading && (
+              <View style={tw`bg-white rounded-3xl p-6 items-center justify-center border border-slate-200 mt-4`}>
+                <Text style={tw`text-slate-500 font-bold`}>No direct orders available</Text>
               </View>
+            )}
+            
+            {availableOrders.map((order, index) => (
+              <View key={order.id || index} style={tw`bg-white rounded-3xl p-4 border border-slate-200 shadow-sm mb-4`}>
+                <View style={tw`flex-row justify-between items-center mb-3`}>
+                  <View style={tw`bg-emerald-100 px-3 py-1 rounded-full`}>
+                    <Text style={tw`text-[10px] font-extrabold text-emerald-800`}>Direct Order</Text>
+                  </View>
+                  <Text style={tw`text-[10px] font-bold text-slate-400`}>Order ID: {order.id?.substring(0, 8)}</Text>
+                </View>
 
-              {/* Locations */}
-              <View style={tw`mb-3`}>
-                <View style={tw`flex-row items-start justify-between`}>
-                  <View style={tw`flex-row items-start flex-1 mr-2`}>
-                    <View style={tw`w-3 h-3 rounded-full border-2 border-blue-600 bg-white mt-1 mr-2`} />
-                    <View style={tw`flex-1`}>
-                      <Text style={tw`text-[10px] font-bold text-blue-600 uppercase tracking-wider`}>PICKUP</Text>
-                      <Text style={tw`text-xs font-extrabold text-slate-900`}>241 Central Gourmet Hub,</Text>
-                      <Text style={tw`text-[11px] text-slate-500`}>Victoria Island</Text>
+                {/* Locations */}
+                <View style={tw`mb-3`}>
+                  <View style={tw`flex-row items-start justify-between`}>
+                    <View style={tw`flex-row items-start flex-1 mr-2`}>
+                      <View style={tw`w-3 h-3 rounded-full border-2 border-blue-600 bg-white mt-1 mr-2`} />
+                      <View style={tw`flex-1`}>
+                        <Text style={tw`text-[10px] font-bold text-blue-600 uppercase tracking-wider`}>PICKUP</Text>
+                        <Text style={tw`text-xs font-extrabold text-slate-900`}>{order.merchantId || 'Shop'}</Text>
+                      </View>
                     </View>
                   </View>
-                  <View style={tw`bg-blue-50 px-2 py-0.5 rounded-full`}>
-                    <Text style={tw`text-[10px] font-bold text-blue-700`}>4.2 km</Text>
+
+                  <View style={tw`w-0.5 h-4 bg-slate-300 ml-1.5 my-0.5`} />
+
+                  <View style={tw`flex-row items-start`}>
+                    <View style={tw`w-3 h-3 rounded-full border-2 border-red-500 bg-white mt-1 mr-2`} />
+                    <View style={tw`flex-1`}>
+                      <Text style={tw`text-[10px] font-bold text-red-500 uppercase tracking-wider`}>DROP-OFF</Text>
+                      <Text style={tw`text-xs font-extrabold text-slate-900`}>{order.customerName || 'Customer'}</Text>
+                    </View>
                   </View>
                 </View>
 
-                <View style={tw`w-0.5 h-4 bg-slate-300 ml-1.5 my-0.5`} />
-
-                <View style={tw`flex-row items-start`}>
-                  <View style={tw`w-3 h-3 rounded-full border-2 border-red-500 bg-white mt-1 mr-2`} />
-                  <View style={tw`flex-1`}>
-                    <Text style={tw`text-[10px] font-bold text-red-500 uppercase tracking-wider`}>DROP-OFF</Text>
-                    <Text style={tw`text-xs font-extrabold text-slate-900`}>Block 4, Lekki Phase 1, Gate B</Text>
-                  </View>
-                </View>
-              </View>
-
-              {/* Stats Bar */}
-              <View style={tw`bg-slate-50 rounded-2xl p-3 flex-row justify-between items-center mb-3 border border-slate-100`}>
-                <View style={tw`flex-row items-center gap-1.5`}>
-                  <Feather name="map-pin" size={14} color="#64748B" />
-                  <View>
-                    <Text style={tw`text-[9px] text-slate-400`}>Distance</Text>
-                    <Text style={tw`text-xs font-bold text-slate-900`}>4.2 km</Text>
+                {/* Stats Bar */}
+                <View style={tw`bg-slate-50 rounded-2xl p-3 flex-row justify-between items-center mb-3 border border-slate-100`}>
+                  <View style={tw`flex-row items-center gap-1.5`}>
+                    <Feather name="credit-card" size={14} color="#059669" />
+                    <View>
+                      <Text style={tw`text-[9px] text-slate-400`}>Earnings</Text>
+                      <Text style={tw`text-xs font-extrabold text-emerald-600`}>LKR {order.totalAmount || '0.00'}</Text>
+                    </View>
                   </View>
                 </View>
 
-                <View style={tw`flex-row items-center gap-1.5`}>
-                  <Feather name="clock" size={14} color="#64748B" />
-                  <View>
-                    <Text style={tw`text-[9px] text-slate-400`}>Est. Time</Text>
-                    <Text style={tw`text-xs font-bold text-slate-900`}>18 min</Text>
-                  </View>
-                </View>
-
-                <View style={tw`flex-row items-center gap-1.5`}>
-                  <Feather name="credit-card" size={14} color="#059669" />
-                  <View>
-                    <Text style={tw`text-[9px] text-slate-400`}>Earnings</Text>
-                    <Text style={tw`text-xs font-extrabold text-emerald-600`}>LKR 4,320.00</Text>
-                  </View>
-                </View>
+                {/* Accept Button */}
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => router.push('/incoming-request')}
+                  style={tw`bg-[#070A2A] rounded-2xl py-3.5 flex-row items-center justify-center gap-2 shadow-md`}>
+                  <Text style={tw`text-white font-extrabold text-sm`}>Accept Request</Text>
+                </TouchableOpacity>
               </View>
-
-              {/* Accept Button */}
-              <TouchableOpacity
-                activeOpacity={0.85}
-                onPress={() => router.push('/incoming-request')}
-                style={tw`bg-[#070A2A] rounded-2xl py-3.5 flex-row items-center justify-center gap-2 shadow-md`}>
-                <Text style={tw`text-white font-extrabold text-sm`}>Accept Request</Text>
-                <View style={tw`w-6 h-6 rounded-full bg-white/20 items-center justify-center`}>
-                  <Text style={tw`text-white text-[11px] font-bold`}>15</Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-
-        {/* CARD 2: Medium Pay */}
-        <View style={tw`bg-white rounded-3xl p-4 border border-slate-200 shadow-sm mb-4`}>
-          <View style={tw`flex-row justify-between items-center mb-3`}>
-            <View style={tw`bg-blue-100 px-3 py-1 rounded-full`}>
-              <Text style={tw`text-[10px] font-extrabold text-blue-800`}>Medium Pay</Text>
-            </View>
-            <Text style={tw`text-[10px] font-bold text-slate-400`}>Order ID: #YA-4590</Text>
-          </View>
-
-          {/* Locations */}
-          <View style={tw`mb-3`}>
-            <View style={tw`flex-row items-start justify-between`}>
-              <View style={tw`flex-row items-start flex-1 mr-2`}>
-                <View style={tw`w-3 h-3 rounded-full border-2 border-blue-600 bg-white mt-1 mr-2`} />
-                <View style={tw`flex-1`}>
-                  <Text style={tw`text-[10px] font-bold text-blue-600 uppercase tracking-wider`}>PICKUP</Text>
-                  <Text style={tw`text-xs font-extrabold text-slate-900`}>The Island Market,</Text>
-                  <Text style={tw`text-[11px] text-slate-500`}>Victoria Island</Text>
-                </View>
-              </View>
-              <View style={tw`bg-blue-50 px-2 py-0.5 rounded-full`}>
-                <Text style={tw`text-[10px] font-bold text-blue-700`}>6.8 km</Text>
-              </View>
-            </View>
-
-            <View style={tw`w-0.5 h-4 bg-slate-300 ml-1.5 my-0.5`} />
-
-            <View style={tw`flex-row items-start`}>
-              <View style={tw`w-3 h-3 rounded-full border-2 border-red-500 bg-white mt-1 mr-2`} />
-              <View style={tw`flex-1`}>
-                <Text style={tw`text-[10px] font-bold text-red-500 uppercase tracking-wider`}>DROP-OFF</Text>
-                <Text style={tw`text-xs font-extrabold text-slate-900`}>Chevron Drive, Lekki Phase 2</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Stats Bar */}
-          <View style={tw`bg-slate-50 rounded-2xl p-3 flex-row justify-between items-center mb-3 border border-slate-100`}>
-            <View style={tw`flex-row items-center gap-1.5`}>
-              <Feather name="map-pin" size={14} color="#64748B" />
-              <View>
-                <Text style={tw`text-[9px] text-slate-400`}>Distance</Text>
-                <Text style={tw`text-xs font-bold text-slate-900`}>6.8 km</Text>
-              </View>
-            </View>
-
-            <View style={tw`flex-row items-center gap-1.5`}>
-              <Feather name="clock" size={14} color="#64748B" />
-              <View>
-                <Text style={tw`text-[9px] text-slate-400`}>Est. Time</Text>
-                <Text style={tw`text-xs font-bold text-slate-900`}>24 min</Text>
-              </View>
-            </View>
-
-            <View style={tw`flex-row items-center gap-1.5`}>
-              <Feather name="credit-card" size={14} color="#059669" />
-              <View>
-                <Text style={tw`text-[9px] text-slate-400`}>Earnings</Text>
-                <Text style={tw`text-xs font-extrabold text-emerald-600`}>LKR 3,160.00</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Accept Button */}
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() => router.push('/incoming-request')}
-            style={tw`bg-[#070A2A] rounded-2xl py-3.5 flex-row items-center justify-center gap-2 shadow-md`}>
-            <Text style={tw`text-white font-extrabold text-sm`}>Accept Request</Text>
-            <View style={tw`w-6 h-6 rounded-full bg-white/20 items-center justify-center`}>
-              <Text style={tw`text-white text-[11px] font-bold`}>12</Text>
-            </View>
-          </TouchableOpacity>
-        </View>
-
+            ))}
           </>
         ) : (
-          <View style={tw`bg-white rounded-3xl p-4 border border-amber-200 shadow-sm mb-4`}>
-            <View style={tw`flex-row justify-between items-center mb-3`}>
-              <View style={tw`bg-amber-100 px-3 py-1 rounded-full flex-row items-center`}>
-                <Ionicons name="flash" size={12} color="#D97706" style={tw`mr-1`} />
-                <Text style={tw`text-[10px] font-extrabold text-amber-800`}>New Hire Request</Text>
+          <>
+            {availableRides.length === 0 && !loading && (
+              <View style={tw`bg-white rounded-3xl p-6 items-center justify-center border border-slate-200 mt-4`}>
+                <Text style={tw`text-slate-500 font-bold`}>No hire requests available</Text>
               </View>
-              <View style={tw`bg-red-50 px-2 py-1 rounded-md flex-row items-center`}>
-                <Feather name="clock" size={12} color="#DC2626" style={tw`mr-1`} />
-                <Text style={tw`text-[10px] font-bold text-red-600`}>
-                  {Math.floor(bidTrip.timeoutSeconds / 60)}:{(bidTrip.timeoutSeconds % 60).toString().padStart(2, '0')}
-                </Text>
-              </View>
-            </View>
+            )}
 
-            <View style={tw`mb-3`}>
-              <Text style={tw`text-lg font-extrabold text-slate-900`}>Colombo City Center</Text>
-              <Text style={tw`text-xs font-bold text-slate-400 my-1`}>TO</Text>
-              <Text style={tw`text-lg font-extrabold text-slate-900`}>Negombo ({bidTrip.distanceKm} km)</Text>
-            </View>
+            {availableRides.map((ride, index) => (
+              <View key={ride.id || index} style={tw`bg-white rounded-3xl p-4 border border-amber-200 shadow-sm mb-4`}>
+                <View style={tw`flex-row justify-between items-center mb-3`}>
+                  <View style={tw`bg-amber-100 px-3 py-1 rounded-full flex-row items-center`}>
+                    <Ionicons name="flash" size={12} color="#D97706" style={tw`mr-1`} />
+                    <Text style={tw`text-[10px] font-extrabold text-amber-800`}>New Hire Request</Text>
+                  </View>
+                </View>
 
-            <View style={tw`bg-slate-50 rounded-2xl p-3 flex-row justify-between items-center mb-4 border border-slate-100`}>
-              <View>
-                <Text style={tw`text-[9px] text-slate-400 uppercase font-bold`}>Starting Price</Text>
-                <Text style={tw`text-sm font-extrabold text-amber-600`}>Rs. {bidTrip.startingPrice.toLocaleString()}</Text>
-              </View>
-              <View style={tw`h-8 w-[1px] bg-slate-200`} />
-              <View>
-                <Text style={tw`text-[9px] text-slate-400 uppercase font-bold`}>Bid Range</Text>
-                <Text style={tw`text-sm font-bold text-slate-900`}>
-                  Rs. {bidTrip.minBid.toLocaleString()} - {bidTrip.maxBid.toLocaleString()}
-                </Text>
-              </View>
-            </View>
+                <View style={tw`mb-3`}>
+                  <Text style={tw`text-sm font-extrabold text-slate-900`} numberOfLines={1}>{ride.pickupAddress}</Text>
+                  <Text style={tw`text-xs font-bold text-slate-400 my-1`}>TO</Text>
+                  <Text style={tw`text-sm font-extrabold text-slate-900`} numberOfLines={1}>{ride.dropoffAddress}</Text>
+                </View>
 
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() => router.push({
-                pathname: '/bid-request',
-                params: {
-                  secondsLeft: bidTrip.timeoutSeconds.toString(),
-                  startingPrice: bidTrip.startingPrice.toString(),
-                  minBid: bidTrip.minBid.toString(),
-                  maxBid: bidTrip.maxBid.toString(),
-                },
-              } as any)}
-              style={tw`bg-[#FFC72C] rounded-2xl py-3.5 flex-row items-center justify-center shadow-md`}>
-              <Text style={tw`text-slate-900 font-extrabold text-sm`}>View Request</Text>
-            </TouchableOpacity>
-          </View>
+                <View style={tw`bg-slate-50 rounded-2xl p-3 flex-row justify-between items-center mb-4 border border-slate-100`}>
+                  <View>
+                    <Text style={tw`text-[9px] text-slate-400 uppercase font-bold`}>Fare</Text>
+                    <Text style={tw`text-sm font-extrabold text-amber-600`}>Rs. {ride.finalFare || '0.00'}</Text>
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => router.push({
+                    pathname: '/bid-request',
+                    params: {
+                      secondsLeft: '60',
+                      startingPrice: String(ride.finalFare || 1000),
+                      minBid: String((ride.finalFare || 1000) * 0.9),
+                      maxBid: String((ride.finalFare || 1000) * 1.25),
+                      rideId: ride.id,
+                    },
+                  } as any)}
+                  style={tw`bg-[#FFC72C] rounded-2xl py-3.5 flex-row items-center justify-center shadow-md`}>
+                  <Text style={tw`text-slate-900 font-extrabold text-sm`}>View Request</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+          </>
         )}
 
         {/* Info Box */}
