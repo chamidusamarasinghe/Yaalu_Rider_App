@@ -34,7 +34,7 @@ export default function SettingsScreen() {
         style: 'destructive',
         onPress: async () => {
           await riderApi.logout();
-          router.replace('/login');
+          router.replace('/' as any);
         },
       },
     ]);

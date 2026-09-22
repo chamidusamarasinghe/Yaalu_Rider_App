@@ -49,6 +49,20 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleLogout = () => {
+    Alert.alert('Sign Out', 'Are you sure you want to sign out of Yaalu Rider?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Sign Out',
+        style: 'destructive',
+        onPress: async () => {
+          await riderApi.logout();
+          router.replace('/' as any);
+        },
+      },
+    ]);
+  };
+
   const fullName = rider?.fullName || `${rider?.firstName || ''} ${rider?.lastName || ''}`.trim() || 'Harsha Perera';
   const riderId = rider?.id ? `#YL-${rider.id.slice(0, 6).toUpperCase()}` : '#YL-8921';
   const rating = rider?.rating ? Number(rider.rating).toFixed(1) : '5.0';
@@ -210,6 +224,20 @@ export default function ProfileScreen() {
                 <Text style={tw`text-sm font-extrabold text-slate-800`}>Settings</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color="#0F172A" />
+            </TouchableOpacity>
+
+            {/* 6. Sign Out */}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handleLogout}
+              style={tw`w-full bg-red-50 rounded-2xl p-4 flex-row items-center justify-between border border-red-100 shadow-xs`}>
+              <View style={tw`flex-row items-center gap-3.5`}>
+                <View style={tw`w-9 h-9 rounded-xl bg-red-500 items-center justify-center`}>
+                  <Ionicons name="log-out" size={18} color="#FFFFFF" />
+                </View>
+                <Text style={tw`text-sm font-extrabold text-red-600`}>Sign Out</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#EF4444" />
             </TouchableOpacity>
           </View>
         </ScrollView>

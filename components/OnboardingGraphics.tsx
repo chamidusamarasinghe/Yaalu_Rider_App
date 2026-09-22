@@ -163,7 +163,7 @@ export function NavigatePickupGraphic() {
   return (
     <View style={tw`w-full rounded-2xl overflow-hidden my-3 shadow-md border border-slate-200`}>
       <Image
-        source={require('@/assets/images/navigate-pickup.png')}
+        source={require('../assets/images/navigate-pickup.png')}
         style={tw`w-full h-64`}
         resizeMode="contain"
       />
@@ -178,7 +178,7 @@ export function DeliverCompleteGraphic() {
       {/* Rider & Customer Handover Image */}
       <View style={tw`w-full h-48 bg-slate-50 rounded-2xl overflow-hidden items-center justify-center`}>
         <Image
-          source={require('@/assets/images/deliver-complete.png')}
+          source={require('../assets/images/deliver-complete.png')}
           style={tw`w-full h-full`}
           resizeMode="contain"
         />
