@@ -16,45 +16,27 @@ import { getSavedRider, riderApi } from '@/services/api';
 export default function PersonalDetailsScreen() {
   const router = useRouter();
   const [rider, setRider] = useState<any>(null);
-  const [userData, setUserData] = useState<any>(null);
 
   useEffect(() => {
     (async () => {
-      // 1. Load from local saved profile
       const saved = await getSavedRider();
       if (saved) setRider(saved);
 
-      // 2. Fetch fresh from backend
-      // getProfile() returns { id, email, fullName, role, rider: { vehicleType, licenseNumber, ... } }
       try {
         const res = await riderApi.getProfile();
-        if (res) {
-          // Merge top-level user fields + nested rider profile
-          const merged = {
-            ...(res.rider || {}),         // nested riderProfile fields
-            id: res.id || res.rider?.id,
-            email: res.email,
-            fullName: res.fullName || res.rider?.fullName,
-            role: res.role,
-          };
-          setUserData(res);
-          setRider((prev: any) => ({ ...prev, ...merged }));
-        }
+        if (res) { const u = res.user || {}; const r = res.rider || res.riderProfile || {}; setRider({ ...res, ...u, ...r }); }
       } catch (e) {
         // use saved fallback
       }
     })();
   }, []);
 
-  const fullName = rider?.fullName || `${rider?.firstName || ''} ${rider?.lastName || ''}`.trim() || '';
-  // Phone: riders who registered via OTP have phone stored as email
-  const phone = rider?.phone || rider?.mobile ||
-    (userData?.email && !userData.email.includes('@') ? userData.email : '') ||
-    (rider?.email && !rider.email.includes('@') ? rider.email : '') || '';
-  const email = rider?.email?.includes('@') ? rider.email : (userData?.email?.includes('@') ? userData.email : '');
-  const nic = rider?.nicNumber || rider?.nic || '';
-  const licenseNumber = rider?.licenseNumber || '';
-  const address = rider?.address ? `${rider.address}${rider.city ? `, ${rider.city}` : ''}` : (rider?.city || '');
+  const fullName = rider?.fullName || `${rider?.firstName || ''} ${rider?.lastName || ''}`.trim() || 'Rider';
+  const phone = rider?.phone || rider?.mobile || 'Not specified';
+  const email = rider?.email || 'Not specified';
+  const nic = rider?.nicNumber || 'Not specified';
+  const licenseNumber = rider?.licenseNumber || 'Not specified';
+  const address = rider?.address ? `${rider.address}${rider.city ? `, ${rider.city}` : ''}` : 'Colombo, Sri Lanka';
 
   return (
     <SafeAreaView style={tw`flex-1 bg-[#FFC72C]`} edges={['top', 'bottom']}>

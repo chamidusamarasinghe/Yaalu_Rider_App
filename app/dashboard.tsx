@@ -9,6 +9,8 @@ import {
   ActivityIndicator,
   RefreshControl,
   Dimensions,
+  Alert,
+  Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,7 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import tw from '@/lib/tw';
 import riderApi, { getSavedRider } from '@/services/api';
 import InteractiveMap from '@/components/InteractiveMap';
-import { getCurrentRiderLocation, LocationCoords } from '@/lib/location';
+import { checkAndGetRiderLocation, LocationCoords } from '@/lib/location';
 
 const { width: W } = Dimensions.get('window');
 
@@ -79,6 +81,7 @@ export default function RiderDashboardScreen() {
   const [rider, setRider] = useState<any>(null);
   const [earnings, setEarnings] = useState<any>(null);
   const [availableCount, setAvailableCount] = useState(0);
+  const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [userLocation, setUserLocation] = useState<LocationCoords>({
     latitude: 6.9271,
@@ -90,17 +93,28 @@ export default function RiderDashboardScreen() {
   const fetchAndSetLocation = useCallback(async (updateBackend = true) => {
     setIsLocating(true);
     try {
-      const loc = await getCurrentRiderLocation();
-      if (loc) {
-        setUserLocation(loc);
+      const result = await checkAndGetRiderLocation();
+      if (result.success && result.coords) {
+        setUserLocation(result.coords);
+        setIsOnline(true);
         if (updateBackend) {
-          riderApi.updateLocation(loc.latitude, loc.longitude).catch((err) => {
-            console.warn('Backend location sync note:', err.message);
+          Promise.all([
+            riderApi.updateLocation(result.coords.latitude, result.coords.longitude),
+            riderApi.setStatus('AVAILABLE'),
+          ]).catch((err) => {
+            console.warn('Backend location/status sync note:', err.message);
           });
+        }
+      } else {
+        // Location is OFF or Permission Denied -> Rider MUST remain OFFLINE
+        setIsOnline(false);
+        if (updateBackend) {
+          riderApi.setStatus('OFFLINE').catch(() => {});
         }
       }
     } catch (e) {
       console.warn('Location fetch error:', e);
+      setIsOnline(false);
     } finally {
       setIsLocating(false);
     }
@@ -119,25 +133,37 @@ export default function RiderDashboardScreen() {
         }
       }
 
-      const [profileRes, earningsRes, ordersRes] = await Promise.allSettled([
+      const [profileRes, earningsRes, ordersRes, historyRes] = await Promise.allSettled([
         riderApi.getProfile(),
         riderApi.getEarnings('daily'),
         riderApi.getAvailableOrders(),
+        riderApi.getMyOrders(),
       ]);
 
       if (profileRes.status === 'fulfilled') {
         const p = profileRes.value as any;
-        setRider(p.rider);
-        setIsOnline(p.rider?.status === 'AVAILABLE');
-        if (p.rider?.currentLatitude && p.rider?.currentLongitude) {
+        const u = p?.user || {};
+        const r = p?.rider || p?.riderProfile || {};
+        const merged = {
+          ...p,
+          ...u,
+          ...r,
+          firstName: u.firstName || (u.fullName ? u.fullName.split(' ')[0] : '') || (r.fullName ? r.fullName.split(' ')[0] : '') || 'Rider',
+          fullName: r.fullName || u.fullName || `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Rider Partner',
+          profilePhotoUrl: r.profilePhotoUrl || u.profilePicture || r.profilePicture || '',
+          profilePicture: r.profilePhotoUrl || u.profilePicture || r.profilePicture || '',
+        };
+        setRider(merged);
+        if (merged.currentLatitude && merged.currentLongitude) {
           setUserLocation({
-            latitude: p.rider.currentLatitude,
-            longitude: p.rider.currentLongitude,
+            latitude: merged.currentLatitude,
+            longitude: merged.currentLongitude,
           });
         }
       }
       if (earningsRes.status === 'fulfilled') setEarnings(earningsRes.value);
-      if (ordersRes.status === 'fulfilled') setAvailableCount((ordersRes.value as any[]).length);
+      if (ordersRes.status === 'fulfilled') setAvailableCount(Array.isArray(ordersRes.value) ? ordersRes.value.length : 0);
+      if (historyRes.status === 'fulfilled') setRecentOrders(Array.isArray(historyRes.value) ? historyRes.value.slice(0, 4) : []);
     } catch (e) {
       console.warn('Dashboard load error:', e);
     }
@@ -155,10 +181,85 @@ export default function RiderDashboardScreen() {
   };
 
   const toggleOnline = async () => {
-    const newStatus = isOnline ? 'OFFLINE' : 'AVAILABLE';
-    setIsOnline(!isOnline);
-    try { await riderApi.setStatus(newStatus); }
-    catch { setIsOnline(isOnline); }
+    // If rider is currently ONLINE and taps toggle to go OFFLINE:
+    if (isOnline) {
+      setIsOnline(false);
+      try {
+        await riderApi.setStatus('OFFLINE');
+      } catch (err) {
+        console.warn('Status update error:', err);
+      }
+      return;
+    }
+
+    // If rider is currently OFFLINE and wants to go ONLINE:
+    setIsLocating(true);
+    const result = await checkAndGetRiderLocation();
+    setIsLocating(false);
+
+    if (!result.success || !result.coords) {
+      setIsOnline(false); // Guarantee toggle stays OFFLINE
+
+      if (result.reason === 'GPS_DISABLED') {
+        Alert.alert(
+          'Turn On Location Services 📍',
+          'Your phone location (GPS) is turned OFF. You MUST turn ON Location Services to switch to Online status and receive ride requests.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Try Again / Turn On',
+              onPress: () => toggleOnline(),
+            },
+          ]
+        );
+      } else if (result.reason === 'PERMISSION_DENIED') {
+        if (result.canAskAgain === false) {
+          Alert.alert(
+            'Location Permission Denied 🔐',
+            'Location permission was previously denied. Please allow location access in phone App Settings to switch to Online status.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Open App Settings',
+                onPress: () => Linking.openSettings(),
+              },
+            ]
+          );
+        } else {
+          Alert.alert(
+            'Location Permission Required 🔐',
+            'Yaalu Rider requires foreground location permission to connect you with nearby delivery requests.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Grant Permission',
+                onPress: () => toggleOnline(),
+              },
+            ]
+          );
+        }
+      } else {
+        Alert.alert(
+          'Location Error ⚠️',
+          result.message || 'Unable to fetch current GPS coordinates. Please turn on location and try again.',
+          [{ text: 'OK' }]
+        );
+      }
+      return;
+    }
+
+    // ONLY IF LOCATION (GPS) IS TURNED ON & PERMISSION GRANTED:
+    setUserLocation(result.coords);
+    setIsOnline(true);
+
+    try {
+      await Promise.all([
+        riderApi.setStatus('AVAILABLE'),
+        riderApi.updateLocation(result.coords.latitude, result.coords.longitude),
+      ]);
+    } catch (err: any) {
+      console.warn('Backend location/status update note:', err?.message || err);
+    }
   };
 
   const earningsAmount = earnings
@@ -173,16 +274,16 @@ export default function RiderDashboardScreen() {
       <View style={tw`bg-[#FFC72C] px-5 pt-3 pb-4 flex-row items-center justify-between`}>
         {/* Avatar + Greeting */}
         <TouchableOpacity onPress={() => router.push('/profile')} style={tw`flex-row items-center gap-3`}>
-          <View style={tw`w-11 h-11 rounded-full border-2 border-[#0B1044] overflow-hidden bg-white shadow-xs`}>
+          <View style={tw`w-11 h-11 rounded-full border-2 border-[#0B1044] overflow-hidden bg-white shadow-sm`}>
             <Image
-              source={{ uri: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200' }}
+              source={{ uri: rider?.profilePhotoUrl || rider?.profilePicture || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200' }}
               style={tw`w-full h-full`}
               resizeMode="cover"
             />
           </View>
           <View>
             <Text style={tw`text-xs font-bold text-[#0B1044]/70`}>Hello 👋</Text>
-            <Text style={tw`text-base font-black text-[#0B1044]`}>{rider?.firstName ?? 'Rider'}</Text>
+            <Text style={tw`text-base font-black text-[#0B1044]`}>{rider?.firstName || (rider?.fullName ? rider.fullName.split(' ')[0] : '') || rider?.fullName || 'Rider Partner'}</Text>
           </View>
         </TouchableOpacity>
 
@@ -218,7 +319,32 @@ export default function RiderDashboardScreen() {
           scrollEnabled={scrollEnabled}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: 110 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFC72C" />}>
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFC72C" />}
+        >
+          {/* ── LOCATION REQUIRED BANNER (When Offline) ──────────────── */}
+          {!isOnline && (
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={toggleOnline}
+              style={tw`bg-[#FFC72C] rounded-2xl p-4 flex-row items-center justify-between mb-4 shadow-sm border border-amber-400`}>
+              <View style={tw`flex-row items-center gap-3 flex-1 mr-2`}>
+                <View style={tw`w-10 h-10 rounded-xl bg-[#0B1044] items-center justify-center`}>
+                  <Ionicons name="location-outline" size={20} color="#FFC72C" />
+                </View>
+                <View style={tw`flex-1`}>
+                  <Text style={tw`text-xs font-black text-[#0B1044]`}>
+                    Location Required to Go Online 📍
+                  </Text>
+                  <Text style={tw`text-[11px] font-semibold text-[#0B1044]/80 mt-0.5`}>
+                    Turn on device GPS & grant permission to switch to Online
+                  </Text>
+                </View>
+              </View>
+              <View style={tw`bg-[#0B1044] rounded-xl px-3 py-2`}>
+                <Text style={tw`text-xs font-black text-[#FFC72C]`}>Turn On →</Text>
+              </View>
+            </TouchableOpacity>
+          )}
 
           {/* ── EARNINGS CARD ──────────────────── */}
           <View style={tw`bg-[#0B1044] rounded-3xl overflow-hidden mb-4`}>
@@ -397,29 +523,37 @@ export default function RiderDashboardScreen() {
 
           {/* ── RECENT ACTIVITY ─────────────────── */}
           <Text style={tw`text-xs font-black text-slate-500 uppercase tracking-widest mb-3`}>Recent Activity</Text>
-          <View style={tw`bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden`}>
-            {[
-              { shop: 'Burger King • Bambalapitiya', dest: 'Kollupitiya', time: '12:40 PM', amt: '+LKR 380', icon: 'fast-food-outline', color: '#2563EB', bg: '#DBEAFE' },
-              { shop: 'Keells Super • Nugegoda', dest: 'Nawala', time: '11:15 AM', amt: '+LKR 520', icon: 'bag-handle-outline', color: '#D97706', bg: '#FEF3C7' },
-            ].map((item, idx, arr) => (
-              <View
-                key={idx}
-                style={[
-                  tw`flex-row items-center justify-between px-4 py-3.5`,
-                  idx < arr.length - 1 && tw`border-b border-slate-100`,
-                ]}>
-                <View style={tw`flex-row items-center gap-3 flex-1`}>
-                  <View style={[tw`w-10 h-10 rounded-xl items-center justify-center`, { backgroundColor: item.bg }]}>
-                    <Ionicons name={item.icon as any} size={18} color={item.color} />
+          <View style={tw`bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden mb-6`}>
+            {recentOrders.length > 0 ? (
+              recentOrders.map((item: any, idx: number) => (
+                <View
+                  key={item.id || idx}
+                  style={[
+                    tw`flex-row items-center justify-between px-4 py-3.5`,
+                    idx < recentOrders.length - 1 && tw`border-b border-slate-100`,
+                  ]}>
+                  <View style={tw`flex-row items-center gap-3 flex-1`}>
+                    <View style={tw`w-10 h-10 rounded-xl bg-blue-100 items-center justify-center`}>
+                      <Ionicons name="navigate-outline" size={18} color="#2563EB" />
+                    </View>
+                    <View style={tw`flex-1`}>
+                      <Text style={tw`text-xs font-bold text-slate-900`} numberOfLines={1}>
+                        {item.pickupAddress} → {item.dropoffAddress}
+                      </Text>
+                      <Text style={tw`text-[10px] text-slate-400 mt-0.5`}>
+                        {item.orderNumber} • {item.dateGroup || 'Today'}
+                      </Text>
+                    </View>
                   </View>
-                  <View style={tw`flex-1`}>
-                    <Text style={tw`text-xs font-bold text-slate-900`} numberOfLines={1}>{item.shop}</Text>
-                    <Text style={tw`text-[10px] text-slate-400 mt-0.5`}>→ {item.dest} • {item.time}</Text>
-                  </View>
+                  <Text style={tw`text-sm font-black text-emerald-600 ml-2`}>{item.amount}</Text>
                 </View>
-                <Text style={tw`text-sm font-black text-emerald-600 ml-2`}>{item.amt}</Text>
+              ))
+            ) : (
+              <View style={tw`p-6 items-center justify-center`}>
+                <Ionicons name="receipt-outline" size={24} color="#94A3B8" />
+                <Text style={tw`text-xs font-semibold text-slate-500 mt-1`}>No recent trips recorded yet</Text>
               </View>
-            ))}
+            )}
           </View>
         </ScrollView>
 

@@ -17,12 +17,13 @@ try {
 }
 
 const memoryStorage: Record<string, string> = {};
+const SENSITIVE_STORAGE_KEYS = new Set(['rider_profile', 'rider_reg_draft']);
 
 export const safeStorage = {
   setItem: async (key: string, value: string) => {
     try {
-      if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
-        localStorage.setItem(key, value);
+      if (SENSITIVE_STORAGE_KEYS.has(key)) {
+        memoryStorage[key] = value;
         return;
       }
       if (AsyncStorage) {
@@ -36,8 +37,8 @@ export const safeStorage = {
   },
   getItem: async (key: string): Promise<string | null> => {
     try {
-      if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
-        return localStorage.getItem(key);
+      if (SENSITIVE_STORAGE_KEYS.has(key)) {
+        return memoryStorage[key] || null;
       }
       if (AsyncStorage) {
         return await AsyncStorage.getItem(key);
@@ -49,8 +50,8 @@ export const safeStorage = {
   },
   removeItem: async (key: string) => {
     try {
-      if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
-        localStorage.removeItem(key);
+      if (SENSITIVE_STORAGE_KEYS.has(key)) {
+        delete memoryStorage[key];
         return;
       }
       if (AsyncStorage) {
@@ -64,7 +65,7 @@ export const safeStorage = {
   },
 };
 
-// Auto-detect correct base URL (port 3001)
+// Auto-detect correct base URL (port 3000)
 export const getBaseUrl = (): string => {
   if (typeof window !== 'undefined' && window.location && Platform.OS === 'web') {
     const protocol = window.location.protocol || 'http:';
@@ -116,10 +117,20 @@ export async function getSavedRider(): Promise<any | null> {
 
 // ─── Temporary Registration Draft Storage ─────────────────────────────────────
 const REG_DRAFT_KEY = 'rider_reg_draft';
+const SENSITIVE_DRAFT_FIELDS = new Set(['accountNumber', 'accountNo']);
+
+function stripSensitiveDraftFields(data: Record<string, any>): Record<string, any> {
+  const sanitized = { ...data };
+  for (const field of SENSITIVE_DRAFT_FIELDS) {
+    delete sanitized[field];
+  }
+  return sanitized;
+}
 
 export async function saveRegistrationDraft(data: Partial<any>): Promise<void> {
-  const current = (await getRegistrationDraft()) || {};
-  const merged = { ...current, ...data };
+  const current = stripSensitiveDraftFields((await getRegistrationDraft()) || {});
+  const incoming = stripSensitiveDraftFields((data || {}) as Record<string, any>);
+  const merged = { ...current, ...incoming };
   await safeStorage.setItem(REG_DRAFT_KEY, JSON.stringify(merged));
 }
 
@@ -198,15 +209,48 @@ export const riderApi = {
       : { mobile: mobileOrEmail, password };
 
     try {
-      const res: any = await request('POST', '/riders/login', payload, false, 4000);
+      const res: any = await request('POST', '/auth/login', payload, false, 4000);
       if (res?.accessToken || res?.token) {
         const token = res.accessToken || res.token;
         await saveToken(token);
-        if (res.rider) await saveRider(res.rider);
+
+        const u = res.user || {};
+        const r = res.rider || res.riderProfile || {};
+
+        const mergedRider = {
+          ...res,
+          ...u,
+          ...r,
+          id: r.id || u.id || res.id,
+          userId: u.id || r.userId || res.id,
+          firstName: u.firstName || (u.fullName ? u.fullName.split(' ')[0] : '') || 'Rider',
+          lastName: u.lastName || '',
+          fullName: r.fullName || u.fullName || `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Rider Partner',
+          phoneNumber: r.phoneNumber || u.phoneNumber || '',
+          phone: r.phoneNumber || u.phoneNumber || '',
+          email: u.email || r.email || '',
+          profilePhotoUrl: r.profilePhotoUrl || u.profilePicture || r.profilePicture || '',
+          profilePicture: r.profilePhotoUrl || u.profilePicture || r.profilePicture || '',
+          nicNumber: r.nicNumber || u.nicNumber || '',
+          address: r.address || u.address || '',
+          city: r.city || u.city || '',
+          vehicleType: r.vehicleType || u.vehicleType || 'MOTORBIKE',
+          vehicleModel: r.vehicleModel || u.vehicleModel || '',
+          vehicleNumber: r.vehicleNumber || u.plateNumber || '',
+          plateNumber: r.vehicleNumber || u.plateNumber || '',
+          licenseNumber: r.licenseNumber || u.licenseNumber || '',
+          bankName: r.bankName || u.bankName || '',
+          accountHolder: r.accountName || u.accountHolder || u.fullName || '',
+          accountName: r.accountName || u.accountHolder || u.fullName || '',
+          accountNumber: r.accountNo || u.accountNumber || '',
+          accountNo: r.accountNo || u.accountNumber || '',
+          branchCode: r.accountBranch || u.branchCode || '',
+          accountBranch: r.accountBranch || u.branchCode || '',
+        };
+        await saveRider(mergedRider);
       }
       return res;
     } catch (err: any) {
-      // Strictly throw error if backend is online or returned invalid credentials message
       console.warn('Rider login failed:', err.message);
       throw err;
     }
