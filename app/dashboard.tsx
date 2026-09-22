@@ -142,11 +142,22 @@ export default function RiderDashboardScreen() {
 
       if (profileRes.status === 'fulfilled') {
         const p = profileRes.value as any;
-        setRider(p.rider);
-        if (p.rider?.currentLatitude && p.rider?.currentLongitude) {
+        const u = p?.user || {};
+        const r = p?.rider || p?.riderProfile || {};
+        const merged = {
+          ...p,
+          ...u,
+          ...r,
+          firstName: u.firstName || (u.fullName ? u.fullName.split(' ')[0] : '') || (r.fullName ? r.fullName.split(' ')[0] : '') || 'Rider',
+          fullName: r.fullName || u.fullName || `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Rider Partner',
+          profilePhotoUrl: r.profilePhotoUrl || u.profilePicture || r.profilePicture || '',
+          profilePicture: r.profilePhotoUrl || u.profilePicture || r.profilePicture || '',
+        };
+        setRider(merged);
+        if (merged.currentLatitude && merged.currentLongitude) {
           setUserLocation({
-            latitude: p.rider.currentLatitude,
-            longitude: p.rider.currentLongitude,
+            latitude: merged.currentLatitude,
+            longitude: merged.currentLongitude,
           });
         }
       }
@@ -265,14 +276,14 @@ export default function RiderDashboardScreen() {
         <TouchableOpacity onPress={() => router.push('/profile')} style={tw`flex-row items-center gap-3`}>
           <View style={tw`w-11 h-11 rounded-full border-2 border-[#0B1044] overflow-hidden bg-white shadow-sm`}>
             <Image
-              source={{ uri: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200' }}
+              source={{ uri: rider?.profilePhotoUrl || rider?.profilePicture || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200' }}
               style={tw`w-full h-full`}
               resizeMode="cover"
             />
           </View>
           <View>
             <Text style={tw`text-xs font-bold text-[#0B1044]/70`}>Hello 👋</Text>
-            <Text style={tw`text-base font-black text-[#0B1044]`}>{rider?.firstName ?? 'Rider'}</Text>
+            <Text style={tw`text-base font-black text-[#0B1044]`}>{rider?.firstName || (rider?.fullName ? rider.fullName.split(' ')[0] : '') || rider?.fullName || 'Rider Partner'}</Text>
           </View>
         </TouchableOpacity>
 

@@ -24,7 +24,7 @@ export default function PersonalDetailsScreen() {
 
       try {
         const res = await riderApi.getProfile();
-        if (res?.rider) setRider(res.rider);
+        if (res) { const u = res.user || {}; const r = res.rider || res.riderProfile || {}; setRider({ ...res, ...u, ...r }); }
       } catch (e) {
         // use saved fallback
       }

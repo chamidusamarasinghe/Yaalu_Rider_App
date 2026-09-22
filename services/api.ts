@@ -202,11 +202,44 @@ export const riderApi = {
       if (res?.accessToken || res?.token) {
         const token = res.accessToken || res.token;
         await saveToken(token);
-        if (res.rider) await saveRider(res.rider);
+
+        const u = res.user || {};
+        const r = res.rider || res.riderProfile || {};
+
+        const mergedRider = {
+          ...res,
+          ...u,
+          ...r,
+          id: r.id || u.id || res.id,
+          userId: u.id || r.userId || res.id,
+          firstName: u.firstName || (u.fullName ? u.fullName.split(' ')[0] : '') || 'Rider',
+          lastName: u.lastName || '',
+          fullName: r.fullName || u.fullName || `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Rider Partner',
+          phoneNumber: r.phoneNumber || u.phoneNumber || '',
+          phone: r.phoneNumber || u.phoneNumber || '',
+          email: u.email || r.email || '',
+          profilePhotoUrl: r.profilePhotoUrl || u.profilePicture || r.profilePicture || '',
+          profilePicture: r.profilePhotoUrl || u.profilePicture || r.profilePicture || '',
+          nicNumber: r.nicNumber || u.nicNumber || '',
+          address: r.address || u.address || '',
+          city: r.city || u.city || '',
+          vehicleType: r.vehicleType || u.vehicleType || 'MOTORBIKE',
+          vehicleModel: r.vehicleModel || u.vehicleModel || '',
+          vehicleNumber: r.vehicleNumber || u.plateNumber || '',
+          plateNumber: r.vehicleNumber || u.plateNumber || '',
+          licenseNumber: r.licenseNumber || u.licenseNumber || '',
+          bankName: r.bankName || u.bankName || '',
+          accountHolder: r.accountName || u.accountHolder || u.fullName || '',
+          accountName: r.accountName || u.accountHolder || u.fullName || '',
+          accountNumber: r.accountNo || u.accountNumber || '',
+          accountNo: r.accountNo || u.accountNumber || '',
+          branchCode: r.accountBranch || u.branchCode || '',
+          accountBranch: r.accountBranch || u.branchCode || '',
+        };
+        await saveRider(mergedRider);
       }
       return res;
     } catch (err: any) {
-      // Strictly throw error if backend is online or returned invalid credentials message
       console.warn('Rider login failed:', err.message);
       throw err;
     }
