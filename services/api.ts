@@ -26,10 +26,6 @@ export const safeStorage = {
         memoryStorage[key] = value;
         return;
       }
-      if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
-        localStorage.setItem(key, value);
-        return;
-      }
       if (AsyncStorage) {
         await AsyncStorage.setItem(key, value);
         return;
@@ -44,9 +40,6 @@ export const safeStorage = {
       if (SENSITIVE_STORAGE_KEYS.has(key)) {
         return memoryStorage[key] || null;
       }
-      if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
-        return localStorage.getItem(key);
-      }
       if (AsyncStorage) {
         return await AsyncStorage.getItem(key);
       }
@@ -59,10 +52,6 @@ export const safeStorage = {
     try {
       if (SENSITIVE_STORAGE_KEYS.has(key)) {
         delete memoryStorage[key];
-        return;
-      }
-      if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
-        localStorage.removeItem(key);
         return;
       }
       if (AsyncStorage) {
