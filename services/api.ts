@@ -17,10 +17,15 @@ try {
 }
 
 const memoryStorage: Record<string, string> = {};
+const SENSITIVE_STORAGE_KEYS = new Set(['rider_profile', 'rider_reg_draft']);
 
 export const safeStorage = {
   setItem: async (key: string, value: string) => {
     try {
+      if (SENSITIVE_STORAGE_KEYS.has(key)) {
+        memoryStorage[key] = value;
+        return;
+      }
       if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
         localStorage.setItem(key, value);
         return;
@@ -36,6 +41,9 @@ export const safeStorage = {
   },
   getItem: async (key: string): Promise<string | null> => {
     try {
+      if (SENSITIVE_STORAGE_KEYS.has(key)) {
+        return memoryStorage[key] || null;
+      }
       if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
         return localStorage.getItem(key);
       }
@@ -49,6 +57,10 @@ export const safeStorage = {
   },
   removeItem: async (key: string) => {
     try {
+      if (SENSITIVE_STORAGE_KEYS.has(key)) {
+        delete memoryStorage[key];
+        return;
+      }
       if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
         localStorage.removeItem(key);
         return;
