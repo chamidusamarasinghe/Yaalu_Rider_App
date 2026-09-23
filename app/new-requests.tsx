@@ -5,170 +5,130 @@ import {
   TouchableOpacity,
   ScrollView,
   StatusBar as RNStatusBar,
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons, Feather, FontAwesome5 } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tw from '@/lib/tw';
-import { fareApi } from '@/services/api';
+import riderApi from '@/services/api';
 
 export default function NewRequestsScreen() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState('Direct');
   const [availableOrders, setAvailableOrders] = useState<any[]>([]);
-  const [availableRides, setAvailableRides] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [acceptingId, setAcceptingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadLiveFarePricing();
-    fetchRequests();
-  }, []);
-
-  const fetchRequests = async () => {
-    setLoading(true);
+  const fetchOrders = async () => {
     try {
-      const [ordersRes, ridesRes] = await Promise.all([
-        riderApi.getAvailableOrders().catch(() => []),
-        riderApi.getAvailableRides().catch(() => [])
-      ]);
-      setAvailableOrders(Array.isArray(ordersRes) ? ordersRes : []);
-      setAvailableRides(Array.isArray(ridesRes) ? ridesRes : []);
-    } catch (err) {
-      console.warn('Failed to load available requests:', err);
+      const res: any = await riderApi.getAvailableOrders();
+      if (Array.isArray(res)) {
+        setAvailableOrders(res);
+      } else {
+        setAvailableOrders([]);
+      }
+    } catch (err: any) {
+      console.warn('Failed to load available orders:', err?.message || err);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
-  const loadLiveFarePricing = async () => {
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchOrders();
+  };
+
+  const handleAcceptOrder = async (orderId: string) => {
     try {
-      // 1. Calculate direct delivery fare
-      const directCalc = await fareApi.calculateFare(6.8, 'MOTORBIKE');
-      if (directCalc && directCalc.totalFare) {
-        setDirectTrip((prev) => ({
-          ...prev,
-          fare: directCalc.totalFare,
-          riderEarnings: directCalc.riderNetEarnings || (directCalc.totalFare * 0.9),
-        }));
-      }
-
-      // 2. Calculate bid trip starting price & window
-      const bidCalc = await fareApi.calculateFare(36.0, 'THREE_WHEEL');
-      if (bidCalc && bidCalc.totalFare) {
-        const base = bidCalc.totalFare;
-        setBidTrip({
-          distanceKm: 36.0,
-          startingPrice: Math.round(base),
-          minBid: Math.round(base * 0.9),
-          maxBid: Math.round(base * 1.25),
-          timeoutSeconds: bidCalc.bidTimeoutSeconds || 120,
-        });
-      }
-    } catch (err) {
-      console.warn('Could not load dynamic fare in new requests:', err);
+      setAcceptingId(orderId);
+      await riderApi.acceptOrder(orderId);
+      Alert.alert(
+        'Order Accepted! 🎉',
+        'You have accepted this delivery request. Proceed to pickup location.',
+        [
+          {
+            text: 'View My Orders',
+            onPress: () => router.push('/orders'),
+          },
+        ]
+      );
+      fetchOrders();
+    } catch (e: any) {
+      Alert.alert('Accept Error ⚠️', e?.message || 'Failed to accept order.');
+    } finally {
+      setAcceptingId(null);
     }
   };
-
-
 
   return (
     <SafeAreaView style={tw`flex-1 bg-[#FFC72C]`} edges={['top', 'bottom']}>
       <RNStatusBar barStyle="dark-content" backgroundColor="#FFC72C" />
 
       <View style={tw`flex-1 bg-[#F8FAFC]`}>
-
-      {/* Header Bar */}
-      <View style={tw`bg-[#FFC72C] h-16 px-4 flex-row items-center justify-between shadow-sm`}>
-        <View style={tw`flex-row items-center gap-3`}>
-          <TouchableOpacity onPress={() => router.back()} style={tw`p-1`}>
-            <Ionicons name="arrow-back" size={24} color="#0B1044" />
-          </TouchableOpacity>
-          <Text style={tw`text-xl font-extrabold text-[#0B1044]`}>New Requests</Text>
-        </View>
-
-        <View style={tw`flex-row items-center gap-1.5`}>
-          <Text style={tw`text-xs font-bold text-[#0B1044]`}>Online</Text>
-          <View style={tw`w-11 h-6 rounded-full bg-emerald-500 p-0.5 justify-end`}>
-            <View style={tw`w-5 h-5 rounded-full bg-white shadow-sm`} />
+        {/* Header Bar */}
+        <View style={tw`bg-[#FFC72C] h-16 px-4 flex-row items-center justify-between shadow-sm`}>
+          <View style={tw`flex-row items-center gap-3`}>
+            <TouchableOpacity onPress={() => router.back()} style={tw`p-1`}>
+              <Ionicons name="arrow-back" size={24} color="#0B1044" />
+            </TouchableOpacity>
+            <Text style={tw`text-xl font-extrabold text-[#0B1044]`}>New Requests</Text>
           </View>
         </View>
-      </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={tw`p-4 pb-24`}>
-        {/* Sort & Filter Controls */}
-        <View style={tw`flex-row justify-between gap-3 mb-4`}>
-          <TouchableOpacity activeOpacity={0.8} style={tw`flex-1 bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 flex-row items-center justify-between shadow-xs`}>
-            <Text style={tw`text-xs font-semibold text-slate-700`}>Sort by <Text style={tw`font-extrabold text-slate-900`}>Nearest</Text></Text>
-            <Ionicons name="chevron-down" size={16} color="#64748B" />
-          </TouchableOpacity>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={tw`p-4 pb-20`}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFC72C" />}>
+          
+          <Text style={tw`text-xs font-black text-slate-500 uppercase tracking-widest mb-3`}>
+            Available Delivery Trips ({availableOrders.length})
+          </Text>
 
-          <TouchableOpacity activeOpacity={0.8} style={tw`bg-white border border-slate-200 rounded-xl px-4 py-2.5 flex-row items-center gap-2 shadow-xs`}>
-            <Feather name="sliders" size={16} color="#475569" />
-            <Text style={tw`text-xs font-bold text-slate-800`}>Filters</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Tabs */}
-        <View style={tw`flex-row bg-slate-200 rounded-xl p-1 mb-4`}>
-          <TouchableOpacity 
-            onPress={() => setActiveTab('Direct')}
-            style={tw`flex-1 py-2 rounded-lg items-center ${activeTab === 'Direct' ? 'bg-white shadow-sm' : ''}`}>
-            <Text style={tw`text-xs font-bold ${activeTab === 'Direct' ? 'text-slate-900' : 'text-slate-500'}`}>Direct</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            onPress={() => setActiveTab('Bid')}
-            style={tw`flex-1 py-2 rounded-lg items-center ${activeTab === 'Bid' ? 'bg-white shadow-sm' : ''}`}>
-            <Text style={tw`text-xs font-bold ${activeTab === 'Bid' ? 'text-slate-900' : 'text-slate-500'}`}>Bid</Text>
-          </TouchableOpacity>
-        </View>
-
-        {activeTab === 'Direct' ? (
-          <>
-            {availableOrders.length === 0 && !loading && (
-              <View style={tw`bg-white rounded-3xl p-6 items-center justify-center border border-slate-200 mt-4`}>
-                <Text style={tw`text-slate-500 font-bold`}>No direct orders available</Text>
-              </View>
-            )}
-            
-            {availableOrders.map((order, index) => (
-              <View key={order.id || index} style={tw`bg-white rounded-3xl p-4 border border-slate-200 shadow-sm mb-4`}>
-                <View style={tw`flex-row justify-between items-center mb-3`}>
-                  <View style={tw`bg-emerald-100 px-3 py-1 rounded-full`}>
-                    <Text style={tw`text-[10px] font-extrabold text-emerald-800`}>Direct Order</Text>
+          {loading ? (
+            <View style={tw`py-12 items-center justify-center`}>
+              <ActivityIndicator size="large" color="#0B1044" />
+              <Text style={tw`text-xs font-semibold text-slate-500 mt-2`}>Fetching live requests...</Text>
+            </View>
+          ) : availableOrders.length > 0 ? (
+            availableOrders.map((item) => (
+              <View
+                key={item.id}
+                style={tw`bg-white rounded-3xl p-5 border border-slate-200 shadow-sm mb-4 gap-4`}>
+                {/* Header Badge */}
+                <View style={tw`flex-row justify-between items-center pb-3 border-b border-slate-100`}>
+                  <View style={tw`flex-row items-center gap-2`}>
+                    <View style={tw`w-8 h-8 rounded-xl bg-amber-100 items-center justify-center`}>
+                      <Ionicons name="flash" size={16} color="#D97706" />
+                    </View>
+                    <Text style={tw`text-sm font-black text-[#0B1044]`}>{item.orderNumber}</Text>
                   </View>
-                  <Text style={tw`text-[10px] font-bold text-slate-400`}>Order ID: {order.id?.substring(0, 8)}</Text>
+                  <Text style={tw`text-lg font-black text-emerald-600`}>LKR {item.fare}</Text>
                 </View>
 
-                {/* Locations */}
-                <View style={tw`mb-3`}>
-                  <View style={tw`flex-row items-start justify-between`}>
-                    <View style={tw`flex-row items-start flex-1 mr-2`}>
-                      <View style={tw`w-3 h-3 rounded-full border-2 border-blue-600 bg-white mt-1 mr-2`} />
-                      <View style={tw`flex-1`}>
-                        <Text style={tw`text-[10px] font-bold text-blue-600 uppercase tracking-wider`}>PICKUP</Text>
-                        <Text style={tw`text-xs font-extrabold text-slate-900`}>{order.merchantId || 'Shop'}</Text>
-                      </View>
-                    </View>
-                  </View>
-
-                  <View style={tw`w-0.5 h-4 bg-slate-300 ml-1.5 my-0.5`} />
-
-                  <View style={tw`flex-row items-start`}>
-                    <View style={tw`w-3 h-3 rounded-full border-2 border-red-500 bg-white mt-1 mr-2`} />
+                {/* Pickup / Dropoff */}
+                <View style={tw`gap-3`}>
+                  <View style={tw`flex-row items-center gap-3`}>
+                    <View style={tw`w-3 h-3 rounded-full bg-emerald-500` } />
                     <View style={tw`flex-1`}>
-                      <Text style={tw`text-[10px] font-bold text-red-500 uppercase tracking-wider`}>DROP-OFF</Text>
-                      <Text style={tw`text-xs font-extrabold text-slate-900`}>{order.customerName || 'Customer'}</Text>
+                      <Text style={tw`text-[10px] font-bold text-slate-400 uppercase`}>PICKUP</Text>
+                      <Text style={tw`text-xs font-bold text-slate-900`}>{item.pickupAddress}</Text>
                     </View>
                   </View>
-                </View>
 
-                {/* Stats Bar */}
-                <View style={tw`bg-slate-50 rounded-2xl p-3 flex-row justify-between items-center mb-3 border border-slate-100`}>
-                  <View style={tw`flex-row items-center gap-1.5`}>
-                    <Feather name="credit-card" size={14} color="#059669" />
-                    <View>
-                      <Text style={tw`text-[9px] text-slate-400`}>Earnings</Text>
-                      <Text style={tw`text-xs font-extrabold text-emerald-600`}>LKR {order.totalAmount || '0.00'}</Text>
+                  <View style={tw`flex-row items-center gap-3`}>
+                    <View style={tw`w-3 h-3 rounded-full bg-red-500`} />
+                    <View style={tw`flex-1`}>
+                      <Text style={tw`text-[10px] font-bold text-slate-400 uppercase`}>DROPOFF</Text>
+                      <Text style={tw`text-xs font-bold text-slate-900`}>{item.dropoffAddress}</Text>
                     </View>
                   </View>
                 </View>
@@ -176,104 +136,34 @@ export default function NewRequestsScreen() {
                 {/* Accept Button */}
                 <TouchableOpacity
                   activeOpacity={0.85}
-                  onPress={() => router.push('/incoming-request')}
-                  style={tw`bg-[#070A2A] rounded-2xl py-3.5 flex-row items-center justify-center gap-2 shadow-md`}>
-                  <Text style={tw`text-white font-extrabold text-sm`}>Accept Request</Text>
+                  disabled={acceptingId === item.id}
+                  onPress={() => handleAcceptOrder(item.id)}
+                  style={tw`bg-[#0B1044] rounded-2xl py-3.5 items-center justify-center flex-row gap-2 shadow-sm`}>
+                  {acceptingId === item.id ? (
+                    <ActivityIndicator size="small" color="#FFC72C" />
+                  ) : (
+                    <>
+                      <Text style={tw`text-white font-extrabold text-sm`}>Accept Order Now</Text>
+                      <Ionicons name="checkmark-circle" size={18} color="#FFC72C" />
+                    </>
+                  )}
                 </TouchableOpacity>
               </View>
-            ))}
-          </>
-        ) : (
-          <>
-            {availableRides.length === 0 && !loading && (
-              <View style={tw`bg-white rounded-3xl p-6 items-center justify-center border border-slate-200 mt-4`}>
-                <Text style={tw`text-slate-500 font-bold`}>No hire requests available</Text>
+            ))
+          ) : (
+            <View style={tw`bg-white rounded-3xl p-8 border border-slate-200 items-center justify-center my-6`}>
+              <View style={tw`w-16 h-16 rounded-full bg-amber-50 items-center justify-center mb-3`}>
+                <Ionicons name="bicycle-outline" size={32} color="#D97706" />
               </View>
-            )}
+              <Text style={tw`text-base font-black text-slate-900 text-center`}>No Nearby Requests Right Now</Text>
+              <Text style={tw`text-xs font-semibold text-slate-500 text-center mt-1 leading-4.5`}>
+                Stay online and near high-demand areas. New customer delivery requests will show up here automatically!
+              </Text>
+            </View>
+          )}
 
-            {availableRides.map((ride, index) => (
-              <View key={ride.id || index} style={tw`bg-white rounded-3xl p-4 border border-amber-200 shadow-sm mb-4`}>
-                <View style={tw`flex-row justify-between items-center mb-3`}>
-                  <View style={tw`bg-amber-100 px-3 py-1 rounded-full flex-row items-center`}>
-                    <Ionicons name="flash" size={12} color="#D97706" style={tw`mr-1`} />
-                    <Text style={tw`text-[10px] font-extrabold text-amber-800`}>New Hire Request</Text>
-                  </View>
-                </View>
-
-                <View style={tw`mb-3`}>
-                  <Text style={tw`text-sm font-extrabold text-slate-900`} numberOfLines={1}>{ride.pickupAddress}</Text>
-                  <Text style={tw`text-xs font-bold text-slate-400 my-1`}>TO</Text>
-                  <Text style={tw`text-sm font-extrabold text-slate-900`} numberOfLines={1}>{ride.dropoffAddress}</Text>
-                </View>
-
-                <View style={tw`bg-slate-50 rounded-2xl p-3 flex-row justify-between items-center mb-4 border border-slate-100`}>
-                  <View>
-                    <Text style={tw`text-[9px] text-slate-400 uppercase font-bold`}>Fare</Text>
-                    <Text style={tw`text-sm font-extrabold text-amber-600`}>Rs. {ride.finalFare || '0.00'}</Text>
-                  </View>
-                </View>
-
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  onPress={() => router.push({
-                    pathname: '/bid-request',
-                    params: {
-                      secondsLeft: '60',
-                      startingPrice: String(ride.finalFare || 1000),
-                      minBid: String((ride.finalFare || 1000) * 0.9),
-                      maxBid: String((ride.finalFare || 1000) * 1.25),
-                      rideId: ride.id,
-                    },
-                  } as any)}
-                  style={tw`bg-[#FFC72C] rounded-2xl py-3.5 flex-row items-center justify-center shadow-md`}>
-                  <Text style={tw`text-slate-900 font-extrabold text-sm`}>View Request</Text>
-                </TouchableOpacity>
-              </View>
-            ))}
-          </>
-        )}
-
-        {/* Info Box */}
-        <View style={tw`bg-blue-50 rounded-2xl p-3.5 flex-row items-center border border-blue-100 mb-4`}>
-          <Feather name="clock" size={16} color="#2563EB" style={tw`mr-3`} />
-          <Text style={tw`flex-1 text-[11px] text-blue-900 font-medium`}>
-            Requests will auto-decline if not accepted within the time limit.
-          </Text>
-        </View>
-
-      </ScrollView>
-
-      {/* Bottom Navigation Bar */}
-      <View style={tw`absolute bottom-0 left-0 right-0 h-16 bg-[#FFC72C] flex-row items-center justify-around border-t border-amber-300 shadow-lg px-2`}>
-        <TouchableOpacity onPress={() => router.push('/dashboard')} style={tw`items-center`}>
-          <Ionicons name="home-outline" size={20} color="#0B1044" />
-          <Text style={tw`text-[10px] font-bold text-[#0B1044]`}>Home</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={tw`items-center`}>
-          <View style={tw`bg-white px-3 py-1 rounded-full flex-row items-center gap-1`}>
-            <Ionicons name="cart" size={18} color="#0B1044" />
-            <Text style={tw`text-xs font-extrabold text-[#0B1044]`}>Orders</Text>
-          </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={() => router.push('/wallet' as any)} style={tw`items-center`}>
-          <Ionicons name="wallet-outline" size={20} color="#0B1044" />
-          <Text style={tw`text-[10px] font-bold text-[#0B1044]`}>Wallet</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={() => router.push('/notifications' as any)} style={tw`items-center`}>
-          <Ionicons name="notifications-outline" size={20} color="#0B1044" />
-          <Text style={tw`text-[10px] font-bold text-[#0B1044]`}>Notification</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={() => router.push('/profile' as any)} style={tw`items-center`}>
-          <Ionicons name="person-outline" size={20} color="#0B1044" />
-          <Text style={tw`text-[10px] font-bold text-[#0B1044]`}>Profile</Text>
-        </TouchableOpacity>
-      </View>
+        </ScrollView>
       </View>
     </SafeAreaView>
   );
 }
-

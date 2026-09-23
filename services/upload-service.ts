@@ -9,7 +9,7 @@ export interface UploadResponse {
 class UploadService {
   /**
    * Upload image or document to Cloudinary CDN via backend gateway.
-   * Optimizes performance with fast IP resolution & automatic dev mode fallbacks.
+   * Optimizes performance with 30-second timeout limit to prevent canceled requests.
    */
   async uploadMedia(
     imageUri: string,
@@ -37,21 +37,21 @@ class UploadService {
     if (estimatedSizeBytes > maxSizeBytes) {
       const maxMb = (maxSizeBytes / (1024 * 1024)).toFixed(0);
       Alert.alert(
-        'File Size Exceeded ⚠️',
+        'File Size Exceeded',
         `Selected file size (${(estimatedSizeBytes / (1024 * 1024)).toFixed(1)}MB) exceeds maximum limit of ${maxMb}MB.`,
       );
       throw new Error(`File size exceeds maximum limit of ${maxMb}MB`);
     }
 
     try {
-      // Post to /uploads/image endpoint via resilient ApiClient with 4-second timeout limit
+      // Post to /uploads/image endpoint via resilient ApiClient with 30-second timeout limit
       const data = await apiClient.post<UploadResponse>(
         '/uploads/image',
         {
           image: imageUri,
           folder: folder,
         },
-        4000, // Fast 4-second max timeout
+        30000, // 30-second timeout limit for smooth image upload
       );
 
       if (data && data.url) {
@@ -59,8 +59,7 @@ class UploadService {
       }
       return { url: imageUri };
     } catch (error: any) {
-      console.warn('[UploadService Resilient Fallback]: Backend offline or slow. Using local media URI:', error?.message || error);
-      // Instant dev fallback return local imageUri without freezing UI
+      console.warn('[UploadService Resilient Fallback]: Backend upload failed or slow. Using media URI:', error?.message || error);
       return { url: imageUri, publicId: 'dev_local_uri' };
     }
   }
