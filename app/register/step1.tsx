@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import {
   Text,
   View,
@@ -17,6 +17,13 @@ import * as ImagePicker from 'expo-image-picker';
 import tw from '@/lib/tw';
 import { riderRegistrationService } from '@/services/rider-registration-service';
 import { uploadService } from '@/services/upload-service';
+import CountryCodePicker from '../../components/CountryCodePicker';
+import {
+  validatePhoneNumber,
+  validateNicNumber,
+  validateEmail,
+  CountryCodeItem,
+} from '../../constants/validation';
 
 export default function RegisterStep1Screen() {
   const router = useRouter();
@@ -24,21 +31,36 @@ export default function RegisterStep1Screen() {
 
   const [firstName, setFirstName] = useState(draft.firstName || '');
   const [lastName, setLastName] = useState(draft.lastName || '');
+  const [countryCode, setCountryCode] = useState<string>('+94');
   const [phone, setPhone] = useState(draft.phone || draft.phoneNumber || '');
+  const [email, setEmail] = useState(draft.email || '');
   const [nic, setNic] = useState(draft.nicNumber || '');
   const [profilePicture, setProfilePicture] = useState<string | null>(draft.profilePicture || null);
   const [isUploading, setIsUploading] = useState(false);
+
+  // Validation status
+  const isFirstNameValid = firstName.trim().length > 0;
+  const isLastNameValid = lastName.trim().length > 0;
+  const phoneVal = useMemo(() => validatePhoneNumber(countryCode, phone), [countryCode, phone]);
+  const emailVal = useMemo(() => validateEmail(email), [email]);
+  const nicVal = useMemo(() => validateNicNumber(nic), [nic]);
+
+  const isFormValid =
+    isFirstNameValid &&
+    isLastNameValid &&
+    phoneVal.isValid &&
+    emailVal.isValid &&
+    nicVal.isValid;
 
   const processAndUploadPhoto = async (localUri: string) => {
     setIsUploading(true);
     setProfilePicture(localUri);
 
     try {
-      // Security Check: Max 5MB limit for photo upload
       const res = await uploadService.uploadMedia(localUri, 'yaalu/riders/profiles', 5 * 1024 * 1024);
       if (res && res.url) {
         setProfilePicture(res.url);
-        Alert.alert('Upload Success ☁️', 'Profile photo uploaded to Cloudinary CDN successfully!');
+        Alert.alert('Upload Success 📸', 'Profile photo uploaded to Cloudinary CDN successfully!');
       }
     } catch (err: any) {
       console.warn('[Cloudinary Profile Upload Error]:', err?.message || err);
@@ -86,26 +108,21 @@ export default function RegisterStep1Screen() {
   };
 
   const handleNextStep = () => {
-    if (!firstName.trim() || !lastName.trim()) {
-      Alert.alert('Validation Error ⚠️', 'Please enter your First Name and Last Name.');
-      return;
-    }
-    if (!phone.trim() || phone.trim().length < 9) {
-      Alert.alert('Validation Error ⚠️', 'Please enter a valid Mobile Phone Number.');
-      return;
-    }
-    if (!nic.trim() || nic.trim().length < 9) {
-      Alert.alert('Validation Error ⚠️', 'Please enter a valid NIC Number.');
-      return;
-    }
+    if (!isFirstNameValid) return Alert.alert('Validation Error ⚠️', 'Please enter your First Name.');
+    if (!isLastNameValid) return Alert.alert('Validation Error ⚠️', 'Please enter your Last Name.');
+    if (!phoneVal.isValid) return Alert.alert('Validation Error ⚠️', phoneVal.errorMessage || 'Invalid Phone Number.');
+    if (!emailVal.isValid) return Alert.alert('Validation Error ⚠️', emailVal.errorMessage || 'Invalid Email Address.');
+    if (!nicVal.isValid) return Alert.alert('Validation Error ⚠️', nicVal.errorMessage || 'Invalid NIC Number.');
 
-    // Save step 1 draft state
+    const fullPhone = `${countryCode}${phone.replace(/\D/g, '')}`;
+
     riderRegistrationService.setDraft({
       firstName: firstName.trim(),
       lastName: lastName.trim(),
-      phone: phone.trim(),
-      phoneNumber: phone.trim(),
-      nicNumber: nic.trim(),
+      phone: fullPhone,
+      phoneNumber: fullPhone,
+      email: email.trim(),
+      nicNumber: nic.trim().toUpperCase(),
       profilePicture: profilePicture || undefined,
     });
 
@@ -150,7 +167,7 @@ export default function RegisterStep1Screen() {
               <Text style={tw`text-base font-extrabold text-[#0B1044]`}>Personal Information</Text>
             </View>
 
-            {/* Profile Photo Upload Badge */}
+            {/* Profile Photo Upload */}
             <View style={tw`items-center my-2`}>
               <TouchableOpacity
                 activeOpacity={0.8}
@@ -172,75 +189,102 @@ export default function RegisterStep1Screen() {
                 {isUploading
                   ? 'Uploading photo to Cloudinary...'
                   : profilePicture
-                  ? 'Photo Uploaded ☁️ (Tap to change)'
+                  ? 'Photo Uploaded 📸 (Tap to change)'
                   : 'Tap to upload profile photo (Cloudinary, Max 5MB)'}
               </Text>
             </View>
 
-            {/* First Name & Last Name Grid */}
-            <View style={tw`flex-row gap-3 mt-4 mb-3`}>
+            {/* First Name & Last Name */}
+            <View style={tw`flex-row gap-3 mt-3`}>
               <View style={tw`flex-1`}>
                 <Text style={tw`text-xs font-bold text-slate-700 mb-1`}>First Name *</Text>
                 <TextInput
+                  style={tw`bg-white rounded-xl px-3.5 py-3 text-sm text-slate-900 border border-slate-200`}
+                  placeholder="First Name"
+                  placeholderTextColor="#94A3B8"
                   value={firstName}
                   onChangeText={setFirstName}
-                  placeholder="e.g. Harsha"
-                  placeholderTextColor="#94A3B8"
-                  style={tw`bg-white border border-slate-200 rounded-xl p-3 text-sm font-semibold text-slate-900 shadow-xs`}
                 />
               </View>
               <View style={tw`flex-1`}>
                 <Text style={tw`text-xs font-bold text-slate-700 mb-1`}>Last Name *</Text>
                 <TextInput
+                  style={tw`bg-white rounded-xl px-3.5 py-3 text-sm text-slate-900 border border-slate-200`}
+                  placeholder="Last Name"
+                  placeholderTextColor="#94A3B8"
                   value={lastName}
                   onChangeText={setLastName}
-                  placeholder="e.g. Perera"
-                  placeholderTextColor="#94A3B8"
-                  style={tw`bg-white border border-slate-200 rounded-xl p-3 text-sm font-semibold text-slate-900 shadow-xs`}
                 />
               </View>
             </View>
 
-            {/* Phone Number Input */}
-            <View style={tw`mb-3`}>
-              <Text style={tw`text-xs font-bold text-slate-700 mb-1`}>Mobile Phone Number *</Text>
-              <TextInput
-                value={phone}
-                onChangeText={setPhone}
-                keyboardType="phone-pad"
-                placeholder="+94 77 123 4567"
-                placeholderTextColor="#94A3B8"
-                style={tw`bg-white border border-slate-200 rounded-xl p-3 text-sm font-semibold text-slate-900 shadow-xs`}
-              />
+            {/* Country Code & Phone Number Field */}
+            <View style={tw`mt-3`}>
+              <Text style={tw`text-xs font-bold text-slate-700 mb-1`}>Phone Number * (Required)</Text>
+              <View style={tw`flex-row items-center`}>
+                <CountryCodePicker
+                  selectedCode={countryCode}
+                  onSelect={(item: CountryCodeItem) => setCountryCode(item.code)}
+                />
+                <TextInput
+                  style={tw`flex-1 bg-white rounded-xl px-3.5 py-3 text-sm text-slate-900 border border-slate-200`}
+                  placeholder="771234567"
+                  placeholderTextColor="#94A3B8"
+                  keyboardType="phone-pad"
+                  value={phone}
+                  onChangeText={setPhone}
+                />
+              </View>
+              {phone.length > 0 && !phoneVal.isValid && (
+                <Text style={tw`text-[11px] font-medium text-red-600 mt-1`}>⚠️ {phoneVal.errorMessage}</Text>
+              )}
             </View>
 
-            {/* NIC Number Input */}
-            <View style={tw`mb-2`}>
-              <Text style={tw`text-xs font-bold text-slate-700 mb-1`}>NIC Number *</Text>
+            {/* Mandatory Email Field */}
+            <View style={tw`mt-3`}>
+              <Text style={tw`text-xs font-bold text-slate-700 mb-1`}>Email Address * (Required)</Text>
               <TextInput
-                value={nic}
-                onChangeText={setNic}
-                placeholder="199512304567 or 951234567V"
+                style={tw`bg-white rounded-xl px-3.5 py-3 text-sm text-slate-900 border border-slate-200`}
+                placeholder="rider@yaalu.lk"
+                placeholderTextColor="#94A3B8"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                value={email}
+                onChangeText={setEmail}
+              />
+              {email.length > 0 && !emailVal.isValid && (
+                <Text style={tw`text-[11px] font-medium text-red-600 mt-1`}>⚠️ {emailVal.errorMessage}</Text>
+              )}
+            </View>
+
+            {/* NIC Number Field */}
+            <View style={tw`mt-3`}>
+              <Text style={tw`text-xs font-bold text-slate-700 mb-1`}>
+                NIC Number * (Old: 921823456V / New: 199218234567)
+              </Text>
+              <TextInput
+                style={tw`bg-white rounded-xl px-3.5 py-3 text-sm text-slate-900 border border-slate-200`}
+                placeholder="921823456V or 199218234567"
                 placeholderTextColor="#94A3B8"
                 autoCapitalize="characters"
-                style={tw`bg-white border border-slate-200 rounded-xl p-3 text-sm font-semibold text-slate-900 shadow-xs`}
+                value={nic}
+                onChangeText={setNic}
               />
+              {nic.length > 0 && !nicVal.isValid && (
+                <Text style={tw`text-[11px] font-medium text-red-600 mt-1`}>⚠️ {nicVal.errorMessage}</Text>
+              )}
             </View>
           </View>
 
           {/* Continue Button */}
           <TouchableOpacity
-            activeOpacity={0.85}
             onPress={handleNextStep}
-            style={tw`rounded-xl py-4 flex-row items-center justify-center gap-2 mt-6 shadow-md bg-[#0B1044]`}>
-            <Text style={tw`text-white font-extrabold text-base`}>Continue to Step 2</Text>
-            <Ionicons name="arrow-forward" size={18} color="#FFC72C" />
+            disabled={!isFormValid}
+            style={tw`mt-6 py-4 rounded-xl items-center justify-center ${
+              isFormValid ? 'bg-[#0B1044]' : 'bg-slate-300'
+            }`}>
+            <Text style={tw`text-base font-extrabold text-white`}>Next: Contact & Address ➔</Text>
           </TouchableOpacity>
-
-          {/* Footer Terms Note */}
-          <Text style={tw`text-[11px] text-slate-400 text-center mt-4 leading-4`}>
-            By continuing, you agree to Yaalu's <Text style={tw`text-[#0B1044] font-bold underline`}>Terms of Service</Text> and <Text style={tw`text-[#0B1044] font-bold underline`}>Privacy Policy</Text>.
-          </Text>
         </ScrollView>
       </View>
     </SafeAreaView>

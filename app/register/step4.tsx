@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import {
   Text,
   View,
@@ -17,13 +17,14 @@ import * as ImagePicker from 'expo-image-picker';
 import tw from '@/lib/tw';
 import { riderRegistrationService } from '@/services/rider-registration-service';
 import { uploadService } from '@/services/upload-service';
+import { formatExpiryDateInput, validateExpiryDate, normalizeExpiryDate } from '../../constants/validation';
 
 export default function RegisterStep4Screen() {
   const router = useRouter();
   const draft = riderRegistrationService.getDraft();
 
   const [licenseNumber, setLicenseNumber] = useState(draft.licenseNumber || '');
-  const [expiryDate, setExpiryDate] = useState(draft.licenseExpiryDate || '');
+  const [rawExpiryDate, setRawExpiryDate] = useState(draft.licenseExpiryDate || '');
 
   const [licenseFrontPhoto, setLicenseFrontPhoto] = useState<string | null>(draft.licenseFrontPhoto || null);
   const [licenseBackPhoto, setLicenseBackPhoto] = useState<string | null>(draft.licenseBackPhoto || null);
@@ -33,9 +34,22 @@ export default function RegisterStep4Screen() {
   const [isUploadingBack, setIsUploadingBack] = useState(false);
   const [isUploadingPolice, setIsUploadingPolice] = useState(false);
 
-  // License Front Photo Upload (Max 5MB)
+  const formattedExpiryDate = useMemo(() => formatExpiryDateInput(rawExpiryDate), [rawExpiryDate]);
+  const expiryValidation = useMemo(() => validateExpiryDate(formattedExpiryDate), [formattedExpiryDate]);
+
+  const handleExpiryTextChange = (text: string) => {
+    setRawExpiryDate(formatExpiryDateInput(text));
+  };
+
+  const handleExpiryBlur = () => {
+    const normalized = normalizeExpiryDate(formattedExpiryDate);
+    if (normalized !== formattedExpiryDate) {
+      setRawExpiryDate(normalized);
+    }
+  };
+
   const handleUploadFront = () => {
-    Alert.alert('License Front Photo 🪪', 'Select License Front photo for Cloudinary CDN (Max 5MB):', [
+    Alert.alert('License Front Photo 📷', 'Select License Front photo for Cloudinary CDN (Max 5MB):', [
       {
         text: 'Take Photo (Camera)',
         onPress: async () => {
@@ -76,9 +90,8 @@ export default function RegisterStep4Screen() {
     ]);
   };
 
-  // License Back Photo Upload (Max 5MB)
   const handleUploadBack = () => {
-    Alert.alert('License Back Photo 🪪', 'Select License Back photo for Cloudinary CDN (Max 5MB):', [
+    Alert.alert('License Back Photo 📷', 'Select License Back photo for Cloudinary CDN (Max 5MB):', [
       {
         text: 'Take Photo (Camera)',
         onPress: async () => {
@@ -119,9 +132,8 @@ export default function RegisterStep4Screen() {
     ]);
   };
 
-  // Police Clearance Document Upload (Max 10MB)
   const handleUploadPoliceClearance = () => {
-    Alert.alert('Police Clearance Certificate 🛡️', 'Upload Police Clearance photo / document for Cloudinary (Max 10MB):', [
+    Alert.alert('Police Clearance Certificate 📜', 'Upload Police Clearance photo / document for Cloudinary (Max 10MB):', [
       {
         text: 'Take Photo (Camera)',
         onPress: async () => {
@@ -161,28 +173,24 @@ export default function RegisterStep4Screen() {
       { text: 'Cancel', style: 'cancel' },
     ]);
   };
+
+  const isFormValid =
+    licenseNumber.trim().length >= 4 &&
+    expiryValidation.isValid &&
+    licenseFrontPhoto !== null &&
+    licenseBackPhoto !== null;
 
   const handleNextStep = () => {
-    if (!licenseNumber.trim()) {
-      Alert.alert('Validation Error ⚠️', 'Please enter your Driving License Number.');
-      return;
-    }
-    if (!expiryDate.trim()) {
-      Alert.alert('Validation Error ⚠️', 'Please enter your License Expiry Date.');
-      return;
-    }
-    if (!licenseFrontPhoto) {
-      Alert.alert('Validation Error ⚠️', 'Please upload your License Front Side photo.');
-      return;
-    }
-    if (!licenseBackPhoto) {
-      Alert.alert('Validation Error ⚠️', 'Please upload your License Back Side photo.');
-      return;
-    }
+    if (!licenseNumber.trim()) return Alert.alert('Validation Error ⚠️', 'Please enter your Driving License Number.');
+    if (!expiryValidation.isValid) return Alert.alert('Validation Error ⚠️', expiryValidation.errorMessage || 'Invalid Expiry Date.');
+    if (!licenseFrontPhoto) return Alert.alert('Validation Error ⚠️', 'Please upload your License Front Side photo.');
+    if (!licenseBackPhoto) return Alert.alert('Validation Error ⚠️', 'Please upload your License Back Side photo.');
+
+    const finalExpiry = expiryValidation.normalizedValue || formattedExpiryDate;
 
     riderRegistrationService.setDraft({
-      licenseNumber: licenseNumber.trim(),
-      licenseExpiryDate: expiryDate.trim(),
+      licenseNumber: licenseNumber.trim().toUpperCase(),
+      licenseExpiryDate: finalExpiry,
       licenseFrontPhoto: licenseFrontPhoto,
       licenseBackPhoto: licenseBackPhoto,
       policeClearanceDoc: policeClearanceDoc || undefined,
@@ -205,7 +213,10 @@ export default function RegisterStep4Screen() {
           <View style={tw`w-6`} />
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={tw`p-5 pb-16`}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={tw`p-5 pb-44`}
+          keyboardShouldPersistTaps="handled">
           {/* Step Progress Header */}
           <View style={tw`mb-5`}>
             <View style={tw`flex-row justify-between items-center mb-2`}>
@@ -232,16 +243,23 @@ export default function RegisterStep4Screen() {
               />
             </View>
 
-            {/* Expiry Date Input */}
+            {/* Expiry Date Input with Auto Hyphenation YYYY-MM-DD */}
             <View style={tw`bg-white border border-slate-300 rounded-2xl px-4 py-3.5 shadow-xs`}>
               <Text style={tw`text-[11px] font-bold text-[#0B1044] mb-1`}>License Expiry Date (YYYY-MM-DD) *</Text>
               <TextInput
-                value={expiryDate}
-                onChangeText={setExpiryDate}
-                placeholder="e.g. 2028-12-31"
+                value={formattedExpiryDate}
+                onChangeText={handleExpiryTextChange}
+                onBlur={handleExpiryBlur}
+                placeholder="2028-12-31"
                 placeholderTextColor="#94A3B8"
+                keyboardType="numeric"
+                maxLength={10}
                 style={tw`text-sm font-semibold text-slate-900 p-0`}
               />
+              <Text style={tw`text-[10px] text-slate-500 mt-1`}>💡 Hyphens (-) auto-insert after year and month.</Text>
+              {formattedExpiryDate.length > 0 && !expiryValidation.isValid && (
+                <Text style={tw`text-[11px] font-medium text-red-600 mt-1`}>⚠️ {expiryValidation.errorMessage}</Text>
+              )}
             </View>
           </View>
 
@@ -250,118 +268,76 @@ export default function RegisterStep4Screen() {
             DRIVING LICENSE PHOTOS * (Cloudinary CDN, Max 5MB)
           </Text>
           <View style={tw`flex-row gap-3 mb-6`}>
-            {/* Front Side */}
+            {/* Front Side Tile with Fixed Height h-44 */}
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={handleUploadFront}
               disabled={isUploadingFront}
-              style={tw`flex-1 border ${
+              style={tw`flex-1 h-44 border ${
                 licenseFrontPhoto ? 'bg-emerald-50 border-emerald-500' : 'bg-white border-dashed border-indigo-300'
-              } rounded-3xl p-3 items-center justify-center min-h-36 shadow-xs relative overflow-hidden`}>
-              {isUploadingFront ? (
-                <View style={tw`items-center py-4`}>
-                  <ActivityIndicator color="#0B1044" size="small" />
-                  <Text style={tw`text-[10px] text-blue-600 font-bold mt-2`}>Uploading to Cloud...</Text>
-                </View>
-              ) : licenseFrontPhoto ? (
-                <>
-                  <Image source={{ uri: licenseFrontPhoto }} style={tw`w-full h-24 rounded-2xl`} resizeMode="cover" />
-                  <View style={tw`flex-row items-center gap-1 mt-2`}>
-                    <Ionicons name="checkmark-circle" size={16} color="#10B981" />
-                    <Text style={tw`text-[11px] font-bold text-emerald-700`}>Front Attached ☁️</Text>
-                  </View>
-                </>
+              } rounded-3xl p-2 items-center justify-center shadow-xs relative overflow-hidden`}>
+              {licenseFrontPhoto ? (
+                <Image source={{ uri: licenseFrontPhoto }} style={tw`w-full h-full rounded-2xl`} resizeMode="cover" />
+              ) : isUploadingFront ? (
+                <ActivityIndicator size="small" color="#0B1044" />
               ) : (
-                <>
-                  <View style={tw`w-10 h-10 rounded-full bg-indigo-50 items-center justify-center mb-1`}>
-                    <Ionicons name="camera-outline" size={22} color="#0B1044" />
-                  </View>
-                  <Text style={tw`text-xs font-extrabold text-slate-800`}>Front Side *</Text>
-                  <Text style={tw`text-[10px] text-indigo-600 font-bold mt-0.5`}>+ Tap to Upload</Text>
-                </>
+                <View style={tw`items-center p-2`}>
+                  <Ionicons name="cloud-upload-outline" size={28} color="#0B1044" />
+                  <Text style={tw`text-xs font-bold text-slate-800 mt-1 text-center`}>License Front *</Text>
+                </View>
               )}
             </TouchableOpacity>
 
-            {/* Back Side */}
+            {/* Back Side Tile with Fixed Height h-44 */}
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={handleUploadBack}
               disabled={isUploadingBack}
-              style={tw`flex-1 border ${
+              style={tw`flex-1 h-44 border ${
                 licenseBackPhoto ? 'bg-emerald-50 border-emerald-500' : 'bg-white border-dashed border-indigo-300'
-              } rounded-3xl p-3 items-center justify-center min-h-36 shadow-xs relative overflow-hidden`}>
-              {isUploadingBack ? (
-                <View style={tw`items-center py-4`}>
-                  <ActivityIndicator color="#0B1044" size="small" />
-                  <Text style={tw`text-[10px] text-blue-600 font-bold mt-2`}>Uploading to Cloud...</Text>
-                </View>
-              ) : licenseBackPhoto ? (
-                <>
-                  <Image source={{ uri: licenseBackPhoto }} style={tw`w-full h-24 rounded-2xl`} resizeMode="cover" />
-                  <View style={tw`flex-row items-center gap-1 mt-2`}>
-                    <Ionicons name="checkmark-circle" size={16} color="#10B981" />
-                    <Text style={tw`text-[11px] font-bold text-emerald-700`}>Back Attached ☁️</Text>
-                  </View>
-                </>
+              } rounded-3xl p-2 items-center justify-center shadow-xs relative overflow-hidden`}>
+              {licenseBackPhoto ? (
+                <Image source={{ uri: licenseBackPhoto }} style={tw`w-full h-full rounded-2xl`} resizeMode="cover" />
+              ) : isUploadingBack ? (
+                <ActivityIndicator size="small" color="#0B1044" />
               ) : (
-                <>
-                  <View style={tw`w-10 h-10 rounded-full bg-indigo-50 items-center justify-center mb-1`}>
-                    <Ionicons name="camera-outline" size={22} color="#0B1044" />
-                  </View>
-                  <Text style={tw`text-xs font-extrabold text-slate-800`}>Back Side *</Text>
-                  <Text style={tw`text-[10px] text-indigo-600 font-bold mt-0.5`}>+ Tap to Upload</Text>
-                </>
+                <View style={tw`items-center p-2`}>
+                  <Ionicons name="cloud-upload-outline" size={28} color="#0B1044" />
+                  <Text style={tw`text-xs font-bold text-slate-800 mt-1 text-center`}>License Back *</Text>
+                </View>
               )}
             </TouchableOpacity>
           </View>
 
-          {/* VERIFICATION DOCUMENTS */}
-          <Text style={tw`text-xs font-black text-slate-700 uppercase tracking-wider mb-3`}>
-            POLICE CLEARANCE CERTIFICATE (Cloudinary CDN, Max 10MB)
+          {/* Police Clearance Certificate */}
+          <Text style={tw`text-xs font-black text-slate-700 uppercase tracking-wider mb-2`}>
+            POLICE CLEARANCE CERTIFICATE (Optional)
           </Text>
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={handleUploadPoliceClearance}
             disabled={isUploadingPolice}
             style={tw`border ${
-              policeClearanceDoc ? 'bg-emerald-50 border-emerald-500' : 'bg-white border-dashed border-indigo-300'
-            } rounded-3xl p-4 flex-row items-center justify-between shadow-xs mb-6`}>
-            <View style={tw`flex-row items-center gap-3 flex-1`}>
-              <View style={tw`w-10 h-10 rounded-full bg-indigo-50 items-center justify-center`}>
-                <Ionicons name="shield-checkmark-outline" size={22} color="#0B1044" />
-              </View>
-              <View style={tw`flex-1`}>
-                <Text style={tw`text-xs font-extrabold text-slate-800`}>Police Clearance Certificate</Text>
-                <Text style={tw`text-[10px] font-bold text-slate-500 mt-0.5`}>
-                  {policeClearanceDoc ? 'Certificate Uploaded to Cloudinary ☁️' : 'Upload photo or document (Optional)'}
+              policeClearanceDoc ? 'bg-emerald-50 border-emerald-500' : 'bg-white border-dashed border-slate-300'
+            } rounded-2xl p-4 flex-row items-center justify-between mb-8 shadow-xs`}>
+            <View style={tw`flex-row items-center gap-3`}>
+              <Ionicons name="document-attach-outline" size={24} color="#0B1044" />
+              <View>
+                <Text style={tw`text-xs font-bold text-slate-900`}>Police Clearance Doc</Text>
+                <Text style={tw`text-[10px] text-slate-500`}>
+                  {policeClearanceDoc ? 'Document Uploaded to Cloudinary' : 'Upload certificate (Max 10MB)'}
                 </Text>
               </View>
             </View>
-            {isUploadingPolice ? (
-              <ActivityIndicator size="small" color="#0B1044" />
-            ) : (
-              <Ionicons
-                name={policeClearanceDoc ? 'checkmark-circle' : 'cloud-upload-outline'}
-                size={22}
-                color={policeClearanceDoc ? '#10B981' : '#6366F1'}
-              />
-            )}
+            <Ionicons name={policeClearanceDoc ? 'checkmark-circle' : 'add-circle-outline'} size={24} color="#0B1044" />
           </TouchableOpacity>
 
-          {/* Primary Action Button */}
+          {/* Continue Button */}
           <TouchableOpacity
-            activeOpacity={0.85}
             onPress={handleNextStep}
-            style={tw`w-full bg-[#0B1044] rounded-2xl py-4 flex-row items-center justify-center gap-2 shadow-md mb-3`}>
-            <Text style={tw`text-white font-extrabold text-base`}>Continue to Final Step</Text>
-            <Ionicons name="arrow-forward" size={18} color="#FFC72C" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => router.back()}
-            style={tw`w-full bg-white border border-[#0B1044] rounded-2xl py-3.5 items-center justify-center mb-8`}>
-            <Text style={tw`text-[#0B1044] font-extrabold text-sm`}>Back to Vehicle Info</Text>
+            disabled={!isFormValid}
+            style={tw`py-4 rounded-xl items-center justify-center ${isFormValid ? 'bg-[#0B1044]' : 'bg-slate-300'}`}>
+            <Text style={tw`text-base font-extrabold text-white`}>Next: Banking & Payout Details ➔</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
