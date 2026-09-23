@@ -38,7 +38,6 @@ export default function RegisterStep1Screen() {
   const [profilePicture, setProfilePicture] = useState<string | null>(draft.profilePicture || null);
   const [isUploading, setIsUploading] = useState(false);
 
-  // Validation status
   const isFirstNameValid = firstName.trim().length > 0;
   const isLastNameValid = lastName.trim().length > 0;
   const phoneVal = useMemo(() => validatePhoneNumber(countryCode, phone), [countryCode, phone]);

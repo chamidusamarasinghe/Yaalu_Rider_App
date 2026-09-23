@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Text,
   View,
@@ -9,25 +9,23 @@ import {
   Alert,
   Modal,
   FlatList,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tw from '@/lib/tw';
-import { riderRegistrationService } from '@/services/rider-registration-service';
+import riderApi, { saveRegistrationDraft, getRegistrationDraft } from '@/services/api';
 import { SRI_LANKA_MAIN_CITIES } from '@/constants/cities';
 
 export default function RegisterStep2Screen() {
   const router = useRouter();
-  const draft = riderRegistrationService.getDraft();
-
-  const [email, setEmail] = useState(draft.email || '');
-  const [password, setPassword] = useState(draft.password || '');
-  const [confirmPassword, setConfirmPassword] = useState(draft.password || '');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [address, setAddress] = useState(draft.address || '');
-  const [city, setCity] = useState(draft.city || '');
+  const [email, setEmail] = useState('');
+  const [address, setAddress] = useState('');
+  const [city, setCity] = useState('');
+  const [phone, setPhone] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // City Picker Modal State
   const [isCityModalVisible, setIsCityModalVisible] = useState(false);
@@ -37,36 +35,50 @@ export default function RegisterStep2Screen() {
     c.toLowerCase().includes(citySearchQuery.toLowerCase()),
   );
 
-  const handleNextStep = () => {
+  useEffect(() => {
+    (async () => {
+      const draft = await getRegistrationDraft();
+      if (draft) {
+        if (draft.phone || draft.mobile) setPhone(draft.phone || draft.mobile);
+        if (draft.email) setEmail(draft.email);
+        if (draft.address) setAddress(draft.address);
+        if (draft.city) setCity(draft.city);
+      }
+    })();
+  }, []);
+
+  const handleNextStep = async () => {
+    setError(null);
     if (!address.trim()) {
-      Alert.alert('Validation Error ⚠️', 'Please enter your Home Address.');
+      setError('Please enter your home address.');
       return;
     }
     if (!city) {
-      Alert.alert('Validation Error ⚠️', 'Please select your operating City from the dropdown list.');
-      return;
-    }
-    if (!password) {
-      Alert.alert('Validation Error ⚠️', 'Please create an account password.');
-      return;
-    }
-    if (password.length < 6) {
-      Alert.alert('Validation Error ⚠️', 'Password must be at least 6 characters long.');
-      return;
-    }
-    if (password !== confirmPassword) {
-      Alert.alert('Validation Error ⚠️', 'Passwords do not match. Please verify your password.');
+      setError('Please select your operating city.');
       return;
     }
 
-    riderRegistrationService.setDraft({
+    const payload = {
+      phone,
+      mobile: phone,
       email: email.trim(),
       address: address.trim(),
-      city: city,
-      password: password.trim(),
-    });
+      city: city.trim() || 'Colombo',
+    };
 
-    router.push('/register/step3');
+    try {
+      setLoading(true);
+      await saveRegistrationDraft(payload);
+      // Non-blocking background sync to backend
+      riderApi.registerStep2(payload).catch((backendErr: any) => {
+        console.log('Step 2 background sync info:', backendErr?.message || backendErr);
+      });
+      router.push('/register/step3');
+    } catch (err: any) {
+      setError(err.message || 'Failed to proceed to step 3.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -74,7 +86,7 @@ export default function RegisterStep2Screen() {
       <RNStatusBar barStyle="dark-content" backgroundColor="#FFC72C" />
 
       <View style={tw`flex-1 bg-[#F8FAFC]`}>
-        {/* Top Header Bar */}
+        {/* Top Gold Header Bar */}
         <View style={tw`bg-[#FFC72C] h-14 px-4 flex-row items-center justify-between shadow-sm`}>
           <TouchableOpacity onPress={() => router.back()} style={tw`p-1`}>
             <Ionicons name="chevron-back" size={26} color="#0B1044" />
@@ -85,101 +97,80 @@ export default function RegisterStep2Screen() {
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={tw`p-5 pb-16`}>
           {/* Step Progress Header */}
-          <View style={tw`mb-5`}>
+          <View style={tw`mb-6`}>
             <View style={tw`flex-row justify-between items-center mb-2`}>
               <Text style={tw`text-sm font-extrabold text-[#0B1044]`}>Step 2 of 5</Text>
-              <Text style={tw`text-sm font-bold text-slate-600`}>Location & Credentials</Text>
+              <Text style={tw`text-sm font-bold text-slate-600`}>Contact & Address</Text>
             </View>
             <View style={tw`h-2 w-full bg-blue-100 rounded-full overflow-hidden`}>
               <View style={tw`h-full w-2/5 bg-[#0B1044] rounded-full`} />
             </View>
           </View>
 
-          <Text style={tw`text-xs font-semibold text-slate-600 mb-5 leading-4.5`}>
-            Specify your residence address, operating city, and create your secure account login password.
-          </Text>
+          {/* Error Message */}
+          {error && (
+            <View style={tw`bg-rose-50 border border-rose-200 rounded-xl p-3 mb-4 flex-row items-center gap-2`}>
+              <Ionicons name="alert-circle" size={18} color="#E11D48" />
+              <Text style={tw`flex-1 text-xs font-bold text-rose-700`}>{error}</Text>
+            </View>
+          )}
 
-          {/* Form Floating Label Inputs */}
-          <View style={tw`gap-4 mb-6`}>
-            {/* Email Address Input (Optional) */}
-            <View style={tw`bg-white border border-slate-300 rounded-2xl px-4 py-3.5 shadow-xs`}>
-              <Text style={tw`text-[11px] font-bold text-[#0B1044] mb-1`}>Email Address (Optional)</Text>
-              <TextInput
-                value={email}
-                onChangeText={setEmail}
-                placeholder="e.g. rider@example.com"
-                placeholderTextColor="#94A3B8"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                style={tw`text-sm font-semibold text-slate-900 p-0`}
-              />
+          {/* Your Information Card */}
+          <View style={tw`bg-white rounded-3xl p-5 border border-slate-200 shadow-xs mb-6 gap-4`}>
+            <View style={tw`flex-row items-center gap-3 border-b border-slate-100 pb-3`}>
+              <View style={tw`w-9 h-9 rounded-xl bg-blue-50 items-center justify-center`}>
+                <Ionicons name="location-outline" size={20} color="#0B1044" />
+              </View>
+              <Text style={tw`text-lg font-black text-slate-900`}>Address Details</Text>
             </View>
 
-            {/* Address Input */}
-            <View style={tw`bg-white border border-slate-300 rounded-2xl px-4 py-3.5 shadow-xs`}>
-              <Text style={tw`text-[11px] font-bold text-[#0B1044] mb-1`}>Permanent Home Address *</Text>
-              <TextInput
-                value={address}
-                onChangeText={setAddress}
-                placeholder="e.g. No. 45, Main Street, Nugegoda"
-                placeholderTextColor="#94A3B8"
-                multiline
-                numberOfLines={2}
-                style={tw`text-sm font-semibold text-slate-900 p-0 min-h-10`}
-              />
+            {/* Email Address */}
+            <View>
+              <Text style={tw`text-xs font-bold text-slate-600 mb-1.5`}>Email Address (Optional)</Text>
+              <View style={tw`flex-row items-center bg-slate-50 border border-slate-200 rounded-2xl px-3.5 py-3 gap-2.5`}>
+                <Ionicons name="mail-outline" size={18} color="#64748B" />
+                <TextInput
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  placeholder="e.g. rider@example.com"
+                  placeholderTextColor="#94A3B8"
+                  style={tw`flex-1 text-sm font-semibold text-slate-900 p-0`}
+                />
+              </View>
             </View>
 
-            {/* Sri Lanka Main City Dropdown Selector */}
-            <View style={tw`bg-white border border-slate-300 rounded-2xl px-4 py-3.5 shadow-xs`}>
-              <Text style={tw`text-[11px] font-bold text-[#0B1044] mb-1.5`}>Operating Main City (Sri Lanka) *</Text>
+            {/* Home Address */}
+            <View>
+              <Text style={tw`text-xs font-bold text-slate-600 mb-1.5`}>Home Address *</Text>
+              <View style={tw`flex-row items-center bg-slate-50 border border-slate-200 rounded-2xl px-3.5 py-3 gap-2.5`}>
+                <Ionicons name="home-outline" size={18} color="#64748B" />
+                <TextInput
+                  value={address}
+                  onChangeText={setAddress}
+                  placeholder="Street Name, House / Building No."
+                  placeholderTextColor="#94A3B8"
+                  style={tw`flex-1 text-sm font-semibold text-slate-900 p-0`}
+                />
+              </View>
+            </View>
+
+            {/* Sri Lanka Main City Dropdown Picker */}
+            <View>
+              <Text style={tw`text-xs font-bold text-slate-600 mb-1.5`}>Operating City / Region *</Text>
               <TouchableOpacity
-                activeOpacity={0.7}
+                activeOpacity={0.75}
                 onPress={() => setIsCityModalVisible(true)}
                 style={tw`flex-row items-center justify-between bg-slate-50 border border-slate-200 rounded-2xl px-3.5 py-3.5`}>
                 <View style={tw`flex-row items-center gap-2.5`}>
-                  <Ionicons name="location-outline" size={18} color="#0B1044" />
-                  <Text style={tw`text-sm font-semibold ${city ? 'text-slate-900 font-bold' : 'text-slate-400'}`}>
-                    {city ? `🇱🇰 ${city}` : 'Select Sri Lanka Main City'}
+                  <Ionicons name="business-outline" size={18} color="#2563EB" />
+                  <Text style={tw`text-sm font-semibold ${city ? 'text-slate-900' : 'text-slate-400'}`}>
+                    {city || 'Select Sri Lanka Main City'}
                   </Text>
                 </View>
                 <Ionicons name="chevron-down" size={18} color="#64748B" />
               </TouchableOpacity>
-            </View>
-
-            {/* Create Password */}
-            <View style={tw`bg-white border border-slate-300 rounded-2xl px-4 py-3.5 shadow-xs`}>
-              <Text style={tw`text-[11px] font-bold text-[#0B1044] mb-1`}>Create Account Password *</Text>
-              <View style={tw`flex-row items-center justify-between`}>
-                <TextInput
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                  placeholder="Minimum 6 characters"
-                  placeholderTextColor="#94A3B8"
-                  style={tw`flex-1 text-sm font-semibold text-slate-900 p-0`}
-                />
-                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={tw`p-1`}>
-                  <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={18} color="#64748B" />
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Confirm Password */}
-            <View style={tw`bg-white border border-slate-300 rounded-2xl px-4 py-3.5 shadow-xs`}>
-              <Text style={tw`text-[11px] font-bold text-[#0B1044] mb-1`}>Confirm Account Password *</Text>
-              <View style={tw`flex-row items-center justify-between`}>
-                <TextInput
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  secureTextEntry={!showConfirmPassword}
-                  placeholder="Re-enter password to confirm"
-                  placeholderTextColor="#94A3B8"
-                  style={tw`flex-1 text-sm font-semibold text-slate-900 p-0`}
-                />
-                <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={tw`p-1`}>
-                  <Ionicons name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'} size={18} color="#64748B" />
-                </TouchableOpacity>
-              </View>
             </View>
           </View>
 
@@ -187,9 +178,19 @@ export default function RegisterStep2Screen() {
           <TouchableOpacity
             activeOpacity={0.85}
             onPress={handleNextStep}
-            style={tw`w-full bg-[#0B1044] rounded-2xl py-4 flex-row items-center justify-center gap-2 shadow-md mb-3`}>
-            <Text style={tw`text-white font-extrabold text-base`}>Continue to Step 3</Text>
-            <Ionicons name="arrow-forward" size={18} color="#FFC72C" />
+            disabled={loading}
+            style={[
+              tw`w-full rounded-2xl py-4 flex-row items-center justify-center gap-2 shadow-md mb-3`,
+              { backgroundColor: loading ? '#94A3B8' : '#0B1044' },
+            ]}>
+            {loading ? (
+              <ActivityIndicator color="#FFC72C" size="small" />
+            ) : (
+              <>
+                <Text style={tw`text-white font-extrabold text-base`}>Continue to Step 3</Text>
+                <Ionicons name="arrow-forward" size={18} color="#FFC72C" />
+              </>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -251,15 +252,15 @@ export default function RegisterStep2Screen() {
                     setCitySearchQuery('');
                   }}
                   style={tw`py-3 px-3 border-b border-slate-100 flex-row items-center justify-between ${
-                    city === item ? 'bg-amber-50 rounded-xl' : ''
+                    city === item ? 'bg-blue-50 rounded-xl' : ''
                   }`}>
                   <Text
                     style={tw`text-sm font-bold ${
-                      city === item ? 'text-[#0B1044] font-black' : 'text-slate-800'
+                      city === item ? 'text-blue-900 font-black' : 'text-slate-800'
                     }`}>
                     🇱🇰 {item}
                   </Text>
-                  {city === item ? <Ionicons name="checkmark-circle" size={20} color="#0B1044" /> : null}
+                  {city === item ? <Ionicons name="checkmark-circle" size={20} color="#2563EB" /> : null}
                 </TouchableOpacity>
               )}
               ListEmptyComponent={

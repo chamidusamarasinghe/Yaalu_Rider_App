@@ -42,7 +42,6 @@ export default function RegisterStep5BankingScreen() {
   const [isBankModalVisible, setIsBankModalVisible] = useState(false);
   const [isBranchModalVisible, setIsBranchModalVisible] = useState(false);
 
-  // Bank account validation check
   const accountValidation = useMemo(() => {
     if (!selectedBank) {
       return { isValid: false, errorMessage: 'Please select your bank first.' };

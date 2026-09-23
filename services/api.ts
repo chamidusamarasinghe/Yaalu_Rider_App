@@ -17,12 +17,13 @@ try {
 }
 
 const memoryStorage: Record<string, string> = {};
+const SENSITIVE_STORAGE_KEYS = new Set(['rider_profile', 'rider_reg_draft']);
 
 export const safeStorage = {
   setItem: async (key: string, value: string) => {
     try {
-      if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
-        localStorage.setItem(key, value);
+      if (SENSITIVE_STORAGE_KEYS.has(key)) {
+        memoryStorage[key] = value;
         return;
       }
       if (AsyncStorage) {
@@ -36,8 +37,8 @@ export const safeStorage = {
   },
   getItem: async (key: string): Promise<string | null> => {
     try {
-      if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
-        return localStorage.getItem(key);
+      if (SENSITIVE_STORAGE_KEYS.has(key)) {
+        return memoryStorage[key] || null;
       }
       if (AsyncStorage) {
         return await AsyncStorage.getItem(key);
@@ -49,8 +50,8 @@ export const safeStorage = {
   },
   removeItem: async (key: string) => {
     try {
-      if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
-        localStorage.removeItem(key);
+      if (SENSITIVE_STORAGE_KEYS.has(key)) {
+        delete memoryStorage[key];
         return;
       }
       if (AsyncStorage) {
@@ -116,10 +117,20 @@ export async function getSavedRider(): Promise<any | null> {
 
 // â”€â”€â”€ Temporary Registration Draft Storage â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const REG_DRAFT_KEY = 'rider_reg_draft';
+const SENSITIVE_DRAFT_FIELDS = new Set(['accountNumber', 'accountNo']);
+
+function stripSensitiveDraftFields(data: Record<string, any>): Record<string, any> {
+  const sanitized = { ...data };
+  for (const field of SENSITIVE_DRAFT_FIELDS) {
+    delete sanitized[field];
+  }
+  return sanitized;
+}
 
 export async function saveRegistrationDraft(data: Partial<any>): Promise<void> {
-  const current = (await getRegistrationDraft()) || {};
-  const merged = { ...current, ...data };
+  const current = stripSensitiveDraftFields((await getRegistrationDraft()) || {});
+  const incoming = stripSensitiveDraftFields((data || {}) as Record<string, any>);
+  const merged = { ...current, ...incoming };
   await safeStorage.setItem(REG_DRAFT_KEY, JSON.stringify(merged));
 }
 
@@ -490,7 +501,16 @@ return { success: true, message: 'OTP sent (Code: ' + generatedOtp + ')', otp: g
     return request('GET', `/riders/me/earnings?${params.toString()}`);
   },
 
-  // â”€â”€â”€ BANK DETAILS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── RIDES / HIRES (RideRequest) ─────────────────────────────
+  async getAvailableRides() {
+    return request('GET', '/deliveries/rides/available', undefined, true);
+  },
+
+  async acceptRide(rideRequestId: string, bidId?: string) {
+    return request('POST', `/deliveries/rides/${rideRequestId}/accept-bid`, { bidId }, true);
+  },
+
+  // ─── BANK DETAILS ───────────────────────────────────────────
   async getBankDetails() {
     const path = await withTokenParam('/riders/me/bank');
     return request('GET', path);
@@ -658,6 +678,7 @@ export const fareApi = {
 };
 
 export default riderApi;
+
 
 
 
