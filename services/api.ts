@@ -1,5 +1,5 @@
 /**
- * Yaalu Rider App — API Service
+ * Yaalu Rider App â€” API Service
  * Central service connecting Expo Rider frontend to NestJS backend.
  */
 
@@ -93,7 +93,7 @@ export const getBaseUrl = (): string => {
 
 export const BASE_URL = getBaseUrl();
 
-// ─── Token & Profile helpers ──────────────────────────────────────────────────
+// â”€â”€â”€ Token & Profile helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function getToken(): Promise<string | null> {
   return safeStorage.getItem('rider_token');
 }
@@ -116,7 +116,101 @@ export async function getSavedRider(): Promise<any | null> {
   return raw ? JSON.parse(raw) : null;
 }
 
-// ─── Temporary Registration Draft Storage ─────────────────────────────────────
+export function formatRiderData(res: any, currentSaved?: any): any {
+  if (!res && !currentSaved) return null;
+  const u = res?.user || {};
+  const r = res?.rider || res?.riderProfile || {};
+
+  const getVal = (...keys: string[]): string => {
+    for (const key of keys) {
+      if (r && r[key] !== undefined && r[key] !== null && r[key] !== '') return String(r[key]);
+      if (u && u[key] !== undefined && u[key] !== null && u[key] !== '') return String(u[key]);
+      if (res && res[key] !== undefined && res[key] !== null && res[key] !== '') return String(res[key]);
+      if (currentSaved && currentSaved[key] !== undefined && currentSaved[key] !== null && currentSaved[key] !== '') return String(currentSaved[key]);
+    }
+    return '';
+  };
+
+  const fullName = getVal('fullName') || `${getVal('firstName')} ${getVal('lastName')}`.trim() || 'Rider Partner';
+  const firstName = getVal('firstName') || (fullName ? fullName.split(' ')[0] : 'Rider');
+  const lastName = getVal('lastName') || (fullName ? fullName.split(' ').slice(1).join(' ') : '');
+  const email = getVal('email');
+  const phone = getVal('phoneNumber', 'phone', 'mobile', 'contactNumber');
+  const nicNumber = getVal('nicNumber', 'nic');
+  const address = getVal('address', 'deliveryAddress');
+  const city = getVal('city');
+  const vehicleType = getVal('vehicleType') || 'MOTORBIKE';
+  const vehicleModel = getVal('vehicleModel');
+  const vehicleNumber = getVal('vehicleNumber', 'plateNumber');
+  const licenseNumber = getVal('licenseNumber', 'drivingLicense');
+  const licenseExpiry = getVal('licenseExpiry', 'licenseExpiryDate');
+  const bankName = getVal('bankName');
+  const accountHolder = getVal('accountHolder', 'accountName');
+  const accountNumber = getVal('accountNumber', 'accountNo');
+  const branchCode = getVal('branchCode', 'accountBranch');
+
+  // Images & Documents (Cloudinary URLs or local URIs)
+  const profilePhotoUrl = getVal('profilePhotoUrl', 'profilePicture', 'profilePhoto', 'profilePic', 'avatar');
+  const vehiclePhoto = getVal('vehiclePhoto', 'vehiclePhotoUrl', 'vehicleImage', 'photoUrl');
+  const registrationDoc = getVal('registrationDoc', 'registrationDocUrl', 'vehicleRegistration', 'registrationDocUri');
+  const licenseFrontUrl = getVal('licenseFrontUrl', 'licenseFrontPhoto');
+  const licenseBackUrl = getVal('licenseBackUrl', 'licenseBackPhoto');
+  const policeClearanceDoc = getVal('policeClearanceDoc');
+
+  const formatted = {
+    ...(currentSaved || {}),
+    ...(res || {}),
+    ...u,
+    ...r,
+    id: r.id || u.id || res?.id || currentSaved?.id,
+    userId: u.id || r.userId || res?.userId || currentSaved?.userId,
+    fullName,
+    firstName,
+    lastName,
+    email,
+    phone,
+    phoneNumber: phone,
+    mobile: phone,
+    nicNumber,
+    nic: nicNumber,
+    address,
+    city,
+    vehicleType,
+    vehicleModel,
+    vehicleNumber,
+    plateNumber: vehicleNumber,
+    licenseNumber,
+    drivingLicense: licenseNumber,
+    licenseExpiry,
+    licenseExpiryDate: licenseExpiry,
+    bankName,
+    accountHolder,
+    accountName: accountHolder,
+    accountNumber,
+    accountNo: accountNumber,
+    branchCode,
+    accountBranch: branchCode,
+    profilePhotoUrl,
+    profilePicture: profilePhotoUrl,
+    profilePhoto: profilePhotoUrl,
+    profilePic: profilePhotoUrl,
+    vehiclePhoto,
+    vehiclePhotoUrl: vehiclePhoto,
+    vehicleImage: vehiclePhoto,
+    registrationDoc,
+    registrationDocUrl: registrationDoc,
+    vehicleRegistration: registrationDoc,
+    licenseFrontUrl,
+    licenseFrontPhoto: licenseFrontUrl,
+    licenseBackUrl,
+    licenseBackPhoto: licenseBackUrl,
+    policeClearanceDoc,
+  };
+
+  return formatted;
+}
+
+// â”€â”€â”€ Temporary Registration Draft Storage â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const REG_DRAFT_KEY = 'rider_reg_draft';
 const SENSITIVE_DRAFT_FIELDS = new Set(['accountNumber', 'accountNo']);
 
@@ -144,13 +238,13 @@ export async function clearRegistrationDraft(): Promise<void> {
   await safeStorage.removeItem(REG_DRAFT_KEY);
 }
 
-// ─── Core fetch helper with timeout & silent fallback ────────────────────────
+// â”€â”€â”€ Core fetch helper with timeout & silent fallback â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function request<T>(
   method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
   path: string,
   body?: object,
   useToken = true,
-  timeoutMs = 4000,
+  timeoutMs = 30000,
 ): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -199,10 +293,10 @@ async function withTokenParam(path: string): Promise<string> {
   return token ? `${path}${sep}token=${token}` : path;
 }
 
-// ─── AUTH & RIDER API ─────────────────────────────────────────────────────────
+// â”€â”€â”€ AUTH & RIDER API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const riderApi = {
-  // ── Login with Mobile + Password or Email + Password ───────
+  // â”€â”€ Login with Mobile + Password or Email + Password â”€â”€â”€â”€â”€â”€â”€
   async login(mobileOrEmail: string, password: string) {
     const isEmail = mobileOrEmail.includes('@');
     const payload = isEmail
@@ -257,22 +351,23 @@ export const riderApi = {
     }
   },
 
-  // ── Send OTP ───────────────────────────────────────────────
-  async sendOtp(mobile: string) {
+  // â”€â”€ Send OTP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  async sendOtp(mobile: string, customOtp?: string) {
     try {
       return await request<{ success: boolean; message: string; otp?: string; phone?: string }>(
         'POST',
-        '/riders/send-otp',
+        '/auth/send-otp',
         { mobile },
         false,
         3000,
       );
     } catch {
-      return { success: true, message: 'OTP sent (Demo code: 123456)', otp: '123456', phone: mobile };
+      const generatedOtp = customOtp || Math.floor(100000 + Math.random() * 900000).toString();
+return { success: true, message: 'OTP sent (Code: ' + generatedOtp + ')', otp: generatedOtp, phone: mobile };
     }
   },
 
-  // ── Verify OTP ─────────────────────────────────────────────
+  // â”€â”€ Verify OTP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   async verifyOtp(mobile: string, otp: string) {
     try {
       const res: any = await request(
@@ -304,7 +399,7 @@ export const riderApi = {
     }
   },
 
-  // ── Step 1: Personal Details ───────────────────────────────
+  // â”€â”€ Step 1: Personal Details â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   async registerStep1(data: {
     phone?: string;
     mobile?: string;
@@ -323,7 +418,7 @@ export const riderApi = {
     }
   },
 
-  // ── Step 2: Contact & Address ──────────────────────────────
+  // â”€â”€ Step 2: Contact & Address â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   async registerStep2(data: {
     phone?: string;
     mobile?: string;
@@ -340,7 +435,7 @@ export const riderApi = {
     }
   },
 
-  // ── Step 3: Vehicle Information ────────────────────────────
+  // â”€â”€ Step 3: Vehicle Information â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   async registerStep3(data: {
     phone?: string;
     mobile?: string;
@@ -358,7 +453,7 @@ export const riderApi = {
     }
   },
 
-  // ── Step 4: Driving License ────────────────────────────────
+  // â”€â”€ Step 4: Driving License â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   async registerStep4(data: {
     phone?: string;
     mobile?: string;
@@ -376,7 +471,7 @@ export const riderApi = {
     }
   },
 
-  // ── Step 5: Banking & Security ─────────────────────────────
+  // â”€â”€ Step 5: Banking & Security â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   async registerStep5(data: {
     phone?: string;
     mobile?: string;
@@ -403,12 +498,12 @@ export const riderApi = {
     }
   },
 
-  // ── Check Registration Status ──────────────────────────────
+  // â”€â”€ Check Registration Status â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   async getRegistrationStatus(phone: string) {
     return request<any>('GET', `/riders/register/status?phone=${encodeURIComponent(phone)}`, undefined, false, 4000);
   },
 
-  // ── Complete 5-Step Rider Registration (Fallback All-in-One) ─
+  // â”€â”€ Complete 5-Step Rider Registration (Fallback All-in-One) â”€
   async register(data: any) {
     const res: any = await request('POST', '/riders/register', { ...data, role: 'RIDER' }, false, 8000);
     if (res?.accessToken || res?.token) {
@@ -420,24 +515,32 @@ export const riderApi = {
     return res;
   },
 
-  // ── Logout ─────────────────────────────────────────────────
+  // â”€â”€ Logout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   async logout() {
     await clearToken();
     await clearRegistrationDraft();
   },
 
-  // ─── PROFILE ────────────────────────────────────────────────
+  // ─── PROFILE ──────────────────────────────────────────────────────────
   async getProfile() {
     const path = await withTokenParam('/riders/me');
     const res: any = await request('GET', path);
-    if (res?.rider) await saveRider(res.rider);
+    if (res) {
+      const currentSaved = await getSavedRider();
+      const mergedRider = formatRiderData(res, currentSaved);
+      await saveRider(mergedRider);
+    }
     return res;
   },
 
   async updateProfile(data: any) {
     const path = await withTokenParam('/riders/me');
     const res: any = await request('PATCH', path, data);
-    if (res?.rider) await saveRider(res.rider);
+    if (res) {
+      const currentSaved = await getSavedRider();
+      const mergedRider = formatRiderData(res, { ...currentSaved, ...data });
+      await saveRider(mergedRider);
+    }
     return res;
   },
 
@@ -451,7 +554,7 @@ export const riderApi = {
     return request('PATCH', path, { latitude, longitude });
   },
 
-  // ─── ORDERS ─────────────────────────────────────────────────
+  // â”€â”€â”€ ORDERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   async getMyOrders(status?: string) {
     const token = await getToken();
     const params = new URLSearchParams();
@@ -475,7 +578,7 @@ export const riderApi = {
     return request('PATCH', path, { status });
   },
 
-  // ─── EARNINGS ───────────────────────────────────────────────
+  // â”€â”€â”€ EARNINGS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   async getEarnings(period: 'daily' | 'weekly' | 'monthly' = 'daily') {
     const token = await getToken();
     const params = new URLSearchParams();
@@ -484,7 +587,7 @@ export const riderApi = {
     return request('GET', `/riders/me/earnings?${params.toString()}`);
   },
 
-  // ─── RIDES / HIRES (RideRequest) ─────────────────────────────
+// ─── RIDES / HIRES (RideRequest) ─────────────────────────────
   async getAvailableRides() {
     return request('GET', '/deliveries/rides/available', undefined, true);
   },
@@ -496,22 +599,34 @@ export const riderApi = {
   // ─── BANK DETAILS ───────────────────────────────────────────
   async getBankDetails() {
     const path = await withTokenParam('/riders/me/bank');
-    return request('GET', path);
+    const res: any = await request('GET', path);
+    if (res) {
+      const currentSaved = await getSavedRider();
+      const mergedRider = formatRiderData({ rider: res }, currentSaved);
+      await saveRider(mergedRider);
+    }
+    return res;
   },
 
   async updateBankDetails(data: any) {
     const path = await withTokenParam('/riders/me/bank');
-    return request('PATCH', path, data);
+    const res: any = await request('PATCH', path, data);
+    if (res) {
+      const currentSaved = await getSavedRider();
+      const mergedRider = formatRiderData({ rider: res }, { ...currentSaved, ...data });
+      await saveRider(mergedRider);
+    }
+    return res;
   },
 
-  // ─── NOTIFICATIONS ──────────────────────────────────────────
+  // â”€â”€â”€ NOTIFICATIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   async getNotifications() {
     const path = await withTokenParam('/riders/me/notifications');
     return request('GET', path);
   },
 };
 
-// ─── CLOUDINARY UPLOAD SERVICE ────────────────────────────────
+// â”€â”€â”€ CLOUDINARY UPLOAD SERVICE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const CLOUDINARY_CLOUD_NAME = 'yaalu';
 const CLOUDINARY_UPLOAD_PRESET = 'yaalu_preset';
 
@@ -555,7 +670,7 @@ export const uploadApi = {
       if (clRes.ok) {
         const clData = await clRes.json();
         if (clData?.secure_url) {
-          console.log('✅ Direct Cloudinary upload success:', clData.secure_url);
+          console.log('âœ… Direct Cloudinary upload success:', clData.secure_url);
           return { imageUrl: clData.secure_url };
         }
       } else {
@@ -609,7 +724,7 @@ export const uploadApi = {
   },
 };
 
-// ─── Fare Calculation & Pricing Engine API ──────────────────
+// â”€â”€â”€ Fare Calculation & Pricing Engine API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const fareApi = {
   /**
    * Calculate exact dynamic trip fare using the live formula from Admin settings
@@ -660,3 +775,8 @@ export const fareApi = {
 };
 
 export default riderApi;
+
+
+
+
+

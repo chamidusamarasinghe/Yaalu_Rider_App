@@ -13,7 +13,8 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tw from '@/lib/tw';
-import riderApi, { getSavedRider } from '@/services/api';
+import riderApi, { getSavedRider, formatRiderData } from '@/services/api';
+import { SRI_LANKAN_BRANCHES } from '@/constants/banks';
 
 export default function BankDetailsScreen() {
   const router = useRouter();
@@ -23,27 +24,49 @@ export default function BankDetailsScreen() {
   const [accountNumber, setAccountNumber] = useState('');
   const [branchName, setBranchName] = useState('');
   const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+
+  const getBranchDisplayName = (val: string) => {
+    if (!val) return 'Not specified';
+    const found = SRI_LANKAN_BRANCHES.find(
+      (b) => b.code === val || b.name.toLowerCase() === val.toLowerCase()
+    );
+    if (found) {
+      if (val === found.code) {
+        return `${found.name} (${found.code})`;
+      }
+      if (!val.includes(found.code)) {
+        return `${found.name} (${found.code})`;
+      }
+      return val;
+    }
+    return val;
+  };
 
   useEffect(() => {
     (async () => {
-      // 1. Load from local saved profile first
       const saved = await getSavedRider();
       if (saved) {
-        setAccountHolder(saved.accountName || saved.accountHolder || saved.fullName || '');
-        setBankName(saved.bankName || '');
-        setAccountNumber(saved.accountNo || saved.accountNumber || '');
-        setBranchName(saved.accountBranch || saved.branchCode || '');
+        const formatted = formatRiderData({}, saved);
+        if (formatted.accountHolder || formatted.accountName) setAccountHolder(formatted.accountHolder || formatted.accountName);
+        if (formatted.bankName) setBankName(formatted.bankName);
+        if (formatted.accountNumber || formatted.accountNo) setAccountNumber(formatted.accountNumber || formatted.accountNo);
+        if (formatted.branchCode || formatted.accountBranch) {
+          setBranchName(formatted.branchCode || formatted.accountBranch);
+        }
       }
 
-      // 2. Fetch fresh from backend — response is flat: { bankName, accountName, accountNo, accountBranch }
       try {
         const res: any = await riderApi.getBankDetails();
         if (res) {
-          if (res.accountName) setAccountHolder(res.accountName);
-          if (res.bankName) setBankName(res.bankName);
-          if (res.accountNo) setAccountNumber(res.accountNo);
-          if (res.accountBranch) setBranchName(res.accountBranch);
+          const currentSaved = await getSavedRider();
+          const formatted = formatRiderData({ rider: res }, currentSaved);
+          if (formatted.accountHolder || formatted.accountName) setAccountHolder(formatted.accountHolder || formatted.accountName);
+          if (formatted.bankName) setBankName(formatted.bankName);
+          if (formatted.accountNumber || formatted.accountNo) setAccountNumber(formatted.accountNumber || formatted.accountNo);
+          if (formatted.branchCode || formatted.accountBranch) {
+            setBranchName(formatted.branchCode || formatted.accountBranch);
+          }
         }
       } catch (e) {
         // fallback to saved
@@ -145,11 +168,11 @@ export default function BankDetailsScreen() {
               />
             </View>
 
-            {/* Branch / Code */}
+            {/* Branch Name & Code */}
             <View style={tw`bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs`}>
-              <Text style={tw`text-[11px] font-semibold text-slate-400 mb-1`}>Branch Name / Code</Text>
+              <Text style={tw`text-[11px] font-semibold text-slate-400 mb-1`}>Branch Name & Code</Text>
               <TextInput
-                value={branchName}
+                value={isEditing ? branchName : getBranchDisplayName(branchName)}
                 onChangeText={setBranchName}
                 editable={isEditing}
                 style={tw`text-base font-black text-slate-900 p-0`}

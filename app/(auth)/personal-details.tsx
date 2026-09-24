@@ -11,7 +11,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tw from '@/lib/tw';
-import { getSavedRider, riderApi } from '@/services/api';
+import { getSavedRider, riderApi, formatRiderData } from '@/services/api';
 
 export default function PersonalDetailsScreen() {
   const router = useRouter();
@@ -20,23 +20,27 @@ export default function PersonalDetailsScreen() {
   useEffect(() => {
     (async () => {
       const saved = await getSavedRider();
-      if (saved) setRider(saved);
+      if (saved) setRider(formatRiderData({}, saved));
 
       try {
         const res = await riderApi.getProfile();
-        if (res) { const u = res.user || {}; const r = res.rider || res.riderProfile || {}; setRider({ ...res, ...u, ...r }); }
+        if (res) {
+          const formatted = formatRiderData(res, saved);
+          setRider(formatted);
+        }
       } catch (e) {
         // use saved fallback
       }
     })();
   }, []);
 
-  const fullName = rider?.fullName || `${rider?.firstName || ''} ${rider?.lastName || ''}`.trim() || 'Rider';
-  const phone = rider?.phone || rider?.mobile || 'Not specified';
+  const fullName = rider?.fullName || `${rider?.firstName || ''} ${rider?.lastName || ''}`.trim() || 'Rider Partner';
+  const phone = rider?.phoneNumber || rider?.phone || rider?.mobile || 'Not specified';
   const email = rider?.email || 'Not specified';
-  const nic = rider?.nicNumber || 'Not specified';
-  const licenseNumber = rider?.licenseNumber || 'Not specified';
-  const address = rider?.address ? `${rider.address}${rider.city ? `, ${rider.city}` : ''}` : 'Colombo, Sri Lanka';
+  const nic = rider?.nicNumber || rider?.nic || 'Not specified';
+  const licenseNumber = rider?.licenseNumber || rider?.drivingLicense || 'Not specified';
+  const address = rider?.address ? `${rider.address}${rider.city ? `, ${rider.city}` : ''}` : (rider?.city ? rider.city : 'Not specified');
+  const profilePhoto = rider?.profilePhotoUrl || rider?.profilePicture || rider?.profilePhoto;
 
   return (
     <SafeAreaView style={tw`flex-1 bg-[#FFC72C]`} edges={['top', 'bottom']}>
@@ -60,14 +64,18 @@ export default function PersonalDetailsScreen() {
           <View style={tw`bg-white rounded-3xl p-5 border border-slate-200 shadow-xs mb-4 gap-4`}>
             {/* Rider Avatar Header */}
             <View style={tw`flex-row items-center gap-4 pb-4 border-b border-slate-100`}>
-              <View style={tw`w-16 h-16 rounded-full border-2 border-amber-300 overflow-hidden bg-slate-200`}>
-                <Image
-                  source={{ uri: rider?.profilePhotoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200' }}
-                  style={tw`w-full h-full`}
-                  resizeMode="cover"
-                />
+              <View style={tw`w-16 h-16 rounded-full border-2 border-amber-300 overflow-hidden bg-slate-200 items-center justify-center`}>
+                {profilePhoto ? (
+                  <Image
+                    source={{ uri: profilePhoto }}
+                    style={tw`w-full h-full`}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <Ionicons name="person" size={32} color="#64748B" />
+                )}
               </View>
-              <View>
+              <View style={tw`flex-1`}>
                 <Text style={tw`text-lg font-black text-slate-900`}>{fullName}</Text>
                 <Text style={tw`text-xs font-bold text-emerald-600 mt-0.5`}>
                   {rider?.isApproved ? 'Verified Rider ✓' : 'Registration Pending'}

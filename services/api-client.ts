@@ -1,4 +1,4 @@
-import Constants from 'expo-constants';
+﻿import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
 const isVirtualAdapterIp = (ip: string): boolean => {
@@ -43,6 +43,10 @@ const getCandidateUrls = (endpoint: string): string[] => {
     urls.push(`http://127.0.0.1:3001${cleanEndpoint}`);
   }
 
+  // Generic localhost fallbacks for all environments
+  urls.push(`http://localhost:3001${cleanEndpoint}`);
+  urls.push(`http://10.0.2.2:3001${cleanEndpoint}`);
+
   return Array.from(new Set(urls));
 };
 
@@ -82,7 +86,7 @@ class ApiClient {
       } catch (error: any) {
         console.warn(`[ApiClient] Request to ${url} failed:`, error?.message || error);
         if (error?.isServerError) {
-          throw error; // Throw server business errors (e.g. "Email is already registered") immediately!
+          throw error;
         }
         lastError = error;
       }
