@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Text,
   View,
@@ -17,7 +17,7 @@ import * as ImagePicker from 'expo-image-picker';
 import tw from '@/lib/tw';
 import { riderRegistrationService } from '@/services/rider-registration-service';
 import { uploadService } from '@/services/upload-service';
-import { formatExpiryDateInput, validateExpiryDate, normalizeExpiryDate } from '../../constants/validation';
+import { formatExpiryDateInput, validateExpiryDate, normalizeExpiryDate } from '@/constants/validation';
 
 export default function RegisterStep4Screen() {
   const router = useRouter();

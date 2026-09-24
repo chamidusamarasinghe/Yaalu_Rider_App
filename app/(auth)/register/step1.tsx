@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Text,
   View,
@@ -17,13 +17,13 @@ import * as ImagePicker from 'expo-image-picker';
 import tw from '@/lib/tw';
 import { riderRegistrationService } from '@/services/rider-registration-service';
 import { uploadService } from '@/services/upload-service';
-import CountryCodePicker from '../../components/CountryCodePicker';
+import CountryCodePicker from '@/components/CountryCodePicker';
 import {
   validatePhoneNumber,
   validateNicNumber,
   validateEmail,
   CountryCodeItem,
-} from '../../constants/validation';
+} from '@/constants/validation';
 
 export default function RegisterStep1Screen() {
   const router = useRouter();

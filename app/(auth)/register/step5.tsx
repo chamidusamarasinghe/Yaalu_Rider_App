@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Text,
   View,
@@ -16,8 +16,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tw from '@/lib/tw';
 import { riderRegistrationService } from '@/services/rider-registration-service';
-import BranchSearchModal from '../../components/BranchSearchModal';
-import { SRI_LANKAN_BANKS, validateBankAccountNumber, BankInfo, BranchInfo } from '../../constants/banks';
+import BranchSearchModal from '@/components/BranchSearchModal';
+import { SRI_LANKAN_BANKS, validateBankAccountNumber, BankInfo, BranchInfo } from '@/constants/banks';
 
 export default function RegisterStep5BankingScreen() {
   const router = useRouter();
