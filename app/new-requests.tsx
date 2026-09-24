@@ -26,7 +26,13 @@ export default function NewRequestsScreen() {
     try {
       const res: any = await riderApi.getAvailableOrders();
       if (Array.isArray(res)) {
-        setAvailableOrders(res);
+        // Note: Adding a simulated rideType here because the backend Order model doesn't have it yet.
+        // We'll treat every alternate order as a BID for testing purposes, or use the real one if it exists.
+        const withRideType = res.map((r, i) => ({
+          ...r,
+          rideType: r.rideType || (i % 2 === 0 ? 'BID' : 'STANDARD'),
+        }));
+        setAvailableOrders(withRideType);
       } else {
         setAvailableOrders([]);
       }
@@ -47,21 +53,31 @@ export default function NewRequestsScreen() {
     fetchOrders();
   };
 
-  const handleAcceptOrder = async (orderId: string) => {
+  const handleAcceptOrder = async (orderId: string, rideType?: string) => {
     try {
       setAcceptingId(orderId);
-      await riderApi.acceptOrder(orderId);
-      Alert.alert(
-        'Order Accepted! 🎉',
-        'You have accepted this delivery request. Proceed to pickup location.',
-        [
-          {
-            text: 'View My Orders',
-            onPress: () => router.push('/orders'),
-          },
-        ]
-      );
-      fetchOrders();
+      
+      const acceptedItem = availableOrders.find(o => o.id === orderId) || {};
+      const fare = acceptedItem.fare ? Number(acceptedItem.fare) : 1000;
+      const actualRideType = rideType || acceptedItem.rideType || 'STANDARD';
+      
+      if (actualRideType === 'BID' || actualRideType === 'BIDDING') {
+        // For Bids, we just VIEW the details. We do not accept the order yet.
+        router.push({
+          pathname: '/hire-details',
+          params: {
+            startingPrice: fare.toString(),
+            minBid: Math.floor(fare * 0.9).toString(),
+            maxBid: Math.floor(fare * 1.2).toString(),
+            secondsLeft: '120',
+          }
+        } as any);
+      } else {
+        // For Standard rides, we ACCEPT the order immediately
+        await riderApi.acceptOrder(orderId);
+        router.push('/navigate-pickup');
+        fetchOrders();
+      }
     } catch (e: any) {
       Alert.alert('Accept Error ⚠️', e?.message || 'Failed to accept order.');
     } finally {
@@ -137,14 +153,16 @@ export default function NewRequestsScreen() {
                 <TouchableOpacity
                   activeOpacity={0.85}
                   disabled={acceptingId === item.id}
-                  onPress={() => handleAcceptOrder(item.id)}
+                  onPress={() => handleAcceptOrder(item.id, item.rideType)}
                   style={tw`bg-[#0B1044] rounded-2xl py-3.5 items-center justify-center flex-row gap-2 shadow-sm`}>
                   {acceptingId === item.id ? (
                     <ActivityIndicator size="small" color="#FFC72C" />
                   ) : (
                     <>
-                      <Text style={tw`text-white font-extrabold text-sm`}>Accept Order Now</Text>
-                      <Ionicons name="checkmark-circle" size={18} color="#FFC72C" />
+                      <Text style={tw`text-white font-extrabold text-sm`}>
+                        {item.rideType?.includes('BID') ? 'View & Join Bid' : 'Accept Ride Now'}
+                      </Text>
+                      <Ionicons name={item.rideType?.includes('BID') ? 'hammer-outline' : 'checkmark-circle'} size={18} color="#FFC72C" />
                     </>
                   )}
                 </TouchableOpacity>
