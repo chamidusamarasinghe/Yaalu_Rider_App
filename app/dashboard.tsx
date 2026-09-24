@@ -16,14 +16,14 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tw from '@/lib/tw';
-import riderApi, { getSavedRider } from '@/services/api';
+import riderApi, { getSavedRider, formatRiderData } from '@/services/api';
 import InteractiveMap from '@/components/InteractiveMap';
 import { checkAndGetRiderLocation, LocationCoords } from '@/lib/location';
 
 const { width: W } = Dimensions.get('window');
 
 
-/* ─── BOTTOM NAV ─────────────────────────────────────────────── */
+/* â”€â”€â”€ BOTTOM NAV â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function BottomNav({ active }: { active: string }) {
   const router = useRouter();
   const tabs = [
@@ -35,23 +35,23 @@ function BottomNav({ active }: { active: string }) {
   ] as const;
 
   return (
-    <View style={[tw`absolute bottom-0 left-0 right-0 bg-[#0B1044] flex-row items-center justify-around border-t-2 border-[#FFC72C]`, { paddingBottom: 8, paddingTop: 10 }]}>
+    <View style={tw`absolute bottom-0 left-0 right-0 h-16 bg-[#FFC72C] flex-row items-center justify-around border-t border-amber-300 shadow-lg px-2`}>
       {tabs.map(t => {
         const isActive = t.key === active;
         return (
           <TouchableOpacity
             key={t.key}
             onPress={() => router.push(t.route as any)}
-            style={tw`items-center flex-1`}>
+            style={tw`items-center`}>
             {isActive ? (
-              <View style={tw`bg-[#FFC72C] rounded-xl px-3 py-1.5 items-center`}>
-                <Ionicons name={t.icon as any} size={20} color="#0B1044" />
-                <Text style={tw`text-[9px] font-black text-[#0B1044] mt-0.5`}>{t.label}</Text>
+              <View style={tw`bg-white px-3 py-1 rounded-full flex-row items-center gap-1`}>
+                <Ionicons name="home" size={18} color="#0B1044" />
+                <Text style={tw`text-xs font-extrabold text-[#0B1044]`}>{t.label}</Text>
               </View>
             ) : (
               <View style={tw`items-center`}>
-                <Ionicons name={t.icon as any} size={20} color="#94A3B8" />
-                <Text style={tw`text-[9px] font-semibold text-slate-400 mt-0.5`}>{t.label}</Text>
+                <Ionicons name={t.icon as any} size={20} color="#0B1044" />
+                <Text style={tw`text-[10px] font-bold text-[#0B1044]`}>{t.label}</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -61,7 +61,7 @@ function BottomNav({ active }: { active: string }) {
   );
 }
 
-/* ─── METRIC CARD ─────────────────────────────────────────────── */
+/* â”€â”€â”€ METRIC CARD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function MetricCard({ icon, label, value, iconColor, bgColor }: any) {
   return (
     <View style={tw`bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex-1`}>
@@ -74,7 +74,7 @@ function MetricCard({ icon, label, value, iconColor, bgColor }: any) {
   );
 }
 
-/* ─── MAIN SCREEN ─────────────────────────────────────────────── */
+/* â”€â”€â”€ MAIN SCREEN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 export default function RiderDashboardScreen() {
   const router = useRouter();
   const [isOnline, setIsOnline] = useState(false);
@@ -124,11 +124,12 @@ export default function RiderDashboardScreen() {
     try {
       const cached = await getSavedRider();
       if (cached) {
-        setRider(cached);
-        if (cached.currentLatitude && cached.currentLongitude) {
+        const formatted = formatRiderData({}, cached);
+        setRider(formatted);
+        if (formatted.currentLatitude && formatted.currentLongitude) {
           setUserLocation({
-            latitude: cached.currentLatitude,
-            longitude: cached.currentLongitude,
+            latitude: formatted.currentLatitude,
+            longitude: formatted.currentLongitude,
           });
         }
       }
@@ -142,17 +143,8 @@ export default function RiderDashboardScreen() {
 
       if (profileRes.status === 'fulfilled') {
         const p = profileRes.value as any;
-        const u = p?.user || {};
-        const r = p?.rider || p?.riderProfile || {};
-        const merged = {
-          ...p,
-          ...u,
-          ...r,
-          firstName: u.firstName || (u.fullName ? u.fullName.split(' ')[0] : '') || (r.fullName ? r.fullName.split(' ')[0] : '') || 'Rider',
-          fullName: r.fullName || u.fullName || `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Rider Partner',
-          profilePhotoUrl: r.profilePhotoUrl || u.profilePicture || r.profilePicture || '',
-          profilePicture: r.profilePhotoUrl || u.profilePicture || r.profilePicture || '',
-        };
+        const currentSaved = await getSavedRider();
+        const merged = formatRiderData(p, currentSaved);
         setRider(merged);
         if (merged.currentLatitude && merged.currentLongitude) {
           setUserLocation({
@@ -202,7 +194,7 @@ export default function RiderDashboardScreen() {
 
       if (result.reason === 'GPS_DISABLED') {
         Alert.alert(
-          'Turn On Location Services 📍',
+          'Turn On Location Services ðŸ“',
           'Your phone location (GPS) is turned OFF. You MUST turn ON Location Services to switch to Online status and receive ride requests.',
           [
             { text: 'Cancel', style: 'cancel' },
@@ -215,7 +207,7 @@ export default function RiderDashboardScreen() {
       } else if (result.reason === 'PERMISSION_DENIED') {
         if (result.canAskAgain === false) {
           Alert.alert(
-            'Location Permission Denied 🔐',
+            'Location Permission Denied ðŸ”',
             'Location permission was previously denied. Please allow location access in phone App Settings to switch to Online status.',
             [
               { text: 'Cancel', style: 'cancel' },
@@ -227,7 +219,7 @@ export default function RiderDashboardScreen() {
           );
         } else {
           Alert.alert(
-            'Location Permission Required 🔐',
+            'Location Permission Required ðŸ”',
             'Yaalu Rider requires foreground location permission to connect you with nearby delivery requests.',
             [
               { text: 'Cancel', style: 'cancel' },
@@ -240,7 +232,7 @@ export default function RiderDashboardScreen() {
         }
       } else {
         Alert.alert(
-          'Location Error ⚠️',
+          'Location Error âš ï¸',
           result.message || 'Unable to fetch current GPS coordinates. Please turn on location and try again.',
           [{ text: 'OK' }]
         );
@@ -270,7 +262,7 @@ export default function RiderDashboardScreen() {
     <SafeAreaView style={tw`flex-1 bg-[#FFC72C]`} edges={['top']}>
       <RNStatusBar barStyle="dark-content" backgroundColor="#FFC72C" />
 
-      {/* ── HEADER ─────────────────────────────── */}
+      {/* â”€â”€ HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <View style={tw`bg-[#FFC72C] px-5 pt-3 pb-4 flex-row items-center justify-between`}>
         {/* Avatar + Greeting */}
         <TouchableOpacity onPress={() => router.push('/profile')} style={tw`flex-row items-center gap-3`}>
@@ -282,7 +274,7 @@ export default function RiderDashboardScreen() {
             />
           </View>
           <View>
-            <Text style={tw`text-xs font-bold text-[#0B1044]/70`}>Hello 👋</Text>
+            <Text style={tw`text-xs font-bold text-[#0B1044]/70`}>Hello ðŸ‘‹</Text>
             <Text style={tw`text-base font-black text-[#0B1044]`}>{rider?.firstName || (rider?.fullName ? rider.fullName.split(' ')[0] : '') || rider?.fullName || 'Rider Partner'}</Text>
           </View>
         </TouchableOpacity>
@@ -313,7 +305,7 @@ export default function RiderDashboardScreen() {
         </View>
       </View>
 
-      {/* ── BODY ─────────────────────────────────── */}
+      {/* â”€â”€ BODY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <View style={tw`flex-1 bg-[#F4F6FB] rounded-t-3xl overflow-hidden`}>
         <ScrollView
           scrollEnabled={scrollEnabled}
@@ -321,7 +313,7 @@ export default function RiderDashboardScreen() {
           contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: 110 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFC72C" />}
         >
-          {/* ── LOCATION REQUIRED BANNER (When Offline) ──────────────── */}
+          {/* â”€â”€ LOCATION REQUIRED BANNER (When Offline) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           {!isOnline && (
             <TouchableOpacity
               activeOpacity={0.9}
@@ -333,7 +325,7 @@ export default function RiderDashboardScreen() {
                 </View>
                 <View style={tw`flex-1`}>
                   <Text style={tw`text-xs font-black text-[#0B1044]`}>
-                    Location Required to Go Online 📍
+                    Location Required to Go Online ðŸ“
                   </Text>
                   <Text style={tw`text-[11px] font-semibold text-[#0B1044]/80 mt-0.5`}>
                     Turn on device GPS & grant permission to switch to Online
@@ -341,12 +333,12 @@ export default function RiderDashboardScreen() {
                 </View>
               </View>
               <View style={tw`bg-[#0B1044] rounded-xl px-3 py-2`}>
-                <Text style={tw`text-xs font-black text-[#FFC72C]`}>Turn On →</Text>
+                <Text style={tw`text-xs font-black text-[#FFC72C]`}>Turn On â†’</Text>
               </View>
             </TouchableOpacity>
           )}
 
-          {/* ── EARNINGS CARD ──────────────────── */}
+          {/* â”€â”€ EARNINGS CARD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           <View style={tw`bg-[#0B1044] rounded-3xl overflow-hidden mb-4`}>
             {/* Accent stripe */}
             <View style={tw`bg-[#FFC72C] h-1.5 w-full`} />
@@ -355,7 +347,7 @@ export default function RiderDashboardScreen() {
                 <Text style={tw`text-xs font-bold text-slate-400 uppercase tracking-widest`}>Today's Earnings</Text>
                 <View style={tw`bg-emerald-500/20 border border-emerald-500/30 rounded-full px-2.5 py-0.5`}>
                   <Text style={tw`text-[10px] font-black text-emerald-400`}>
-                    {earnings ? `${earnings.totalDeliveries} Trips` : '–'}
+                    {earnings ? `${earnings.totalDeliveries} Trips` : 'â€“'}
                   </Text>
                 </View>
               </View>
@@ -375,7 +367,7 @@ export default function RiderDashboardScreen() {
             </View>
           </View>
 
-          {/* ── LIVE INTERACTIVE MAP ───────────────────── */}
+          {/* â”€â”€ LIVE INTERACTIVE MAP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           <View style={tw`mb-5`}>
             <View style={tw`flex-row justify-between items-center mb-2`}>
               <Text style={tw`text-xs font-black text-slate-500 uppercase tracking-widest`}>
@@ -455,7 +447,7 @@ export default function RiderDashboardScreen() {
             </View>
           </View>
 
-          {/* ── NEW REQUESTS BANNER ──────────────── */}
+          {/* â”€â”€ NEW REQUESTS BANNER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           {availableCount > 0 && (
             <TouchableOpacity
               activeOpacity={0.9}
@@ -473,7 +465,7 @@ export default function RiderDashboardScreen() {
                 </View>
               </View>
               <View style={tw`bg-[#0B1044] rounded-lg px-3 py-2`}>
-                <Text style={tw`text-xs font-black text-[#FFC72C]`}>View →</Text>
+                <Text style={tw`text-xs font-black text-[#FFC72C]`}>View â†’</Text>
               </View>
             </TouchableOpacity>
           )}
@@ -491,15 +483,15 @@ export default function RiderDashboardScreen() {
             </TouchableOpacity>
           )}
 
-          {/* ── QUICK METRICS GRID ───────────────── */}
+          {/* â”€â”€ QUICK METRICS GRID â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           <Text style={tw`text-xs font-black text-slate-500 uppercase tracking-widest mb-3`}>Performance</Text>
           <View style={tw`flex-row gap-3 mb-5`}>
             <MetricCard icon="checkmark-circle-outline" label="Acceptance" value="98.5%" iconColor="#059669" bgColor="#DCFCE7" />
-            <MetricCard icon="star-outline" label="Rating" value="4.9 ★" iconColor="#D97706" bgColor="#FEF3C7" />
+            <MetricCard icon="star-outline" label="Rating" value="4.9 â˜…" iconColor="#D97706" bgColor="#FEF3C7" />
             <MetricCard icon="time-outline" label="Avg Time" value="22 min" iconColor="#2563EB" bgColor="#DBEAFE" />
           </View>
 
-          {/* ── QUICK ACTIONS ────────────────────── */}
+          {/* â”€â”€ QUICK ACTIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           <Text style={tw`text-xs font-black text-slate-500 uppercase tracking-widest mb-3`}>Quick Actions</Text>
           <View style={tw`flex-row gap-3 mb-5`}>
             {[
@@ -521,7 +513,7 @@ export default function RiderDashboardScreen() {
             ))}
           </View>
 
-          {/* ── RECENT ACTIVITY ─────────────────── */}
+          {/* â”€â”€ RECENT ACTIVITY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           <Text style={tw`text-xs font-black text-slate-500 uppercase tracking-widest mb-3`}>Recent Activity</Text>
           <View style={tw`bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden mb-6`}>
             {recentOrders.length > 0 ? (
@@ -538,10 +530,10 @@ export default function RiderDashboardScreen() {
                     </View>
                     <View style={tw`flex-1`}>
                       <Text style={tw`text-xs font-bold text-slate-900`} numberOfLines={1}>
-                        {item.pickupAddress} → {item.dropoffAddress}
+                        {item.pickupAddress} â†’ {item.dropoffAddress}
                       </Text>
                       <Text style={tw`text-[10px] text-slate-400 mt-0.5`}>
-                        {item.orderNumber} • {item.dateGroup || 'Today'}
+                        {item.orderNumber} â€¢ {item.dateGroup || 'Today'}
                       </Text>
                     </View>
                   </View>
@@ -557,9 +549,10 @@ export default function RiderDashboardScreen() {
           </View>
         </ScrollView>
 
-        {/* ── BOTTOM NAV ──────────────────────── */}
+        {/* â”€â”€ BOTTOM NAV â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <BottomNav active="dashboard" />
       </View>
     </SafeAreaView>
   );
 }
+

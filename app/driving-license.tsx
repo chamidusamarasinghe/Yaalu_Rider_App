@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import tw from '@/lib/tw';
 
-import riderApi, { uploadApi } from '@/services/api';
+import riderApi, { uploadApi, getSavedRider, getRegistrationDraft, formatRiderData } from '@/services/api';
 
 export default function DrivingLicenseScreen() {
   const router = useRouter();
@@ -22,6 +22,30 @@ export default function DrivingLicenseScreen() {
   const [frontUri, setFrontUri] = useState<string | null>(null);
   const [backUri, setBackUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  React.useEffect(() => {
+    (async () => {
+      const saved = await getSavedRider();
+      const draft = await getRegistrationDraft();
+      const merged = formatRiderData(draft, saved);
+
+      if (merged) {
+        if (merged.licenseFrontUrl || merged.licenseFrontPhoto) setFrontUri(merged.licenseFrontUrl || merged.licenseFrontPhoto);
+        if (merged.licenseBackUrl || merged.licenseBackPhoto) setBackUri(merged.licenseBackUrl || merged.licenseBackPhoto);
+      }
+
+      try {
+        const res = await riderApi.getProfile();
+        if (res) {
+          const formatted = formatRiderData(res, merged);
+          if (formatted.licenseFrontUrl || formatted.licenseFrontPhoto) setFrontUri(formatted.licenseFrontUrl || formatted.licenseFrontPhoto);
+          if (formatted.licenseBackUrl || formatted.licenseBackPhoto) setBackUri(formatted.licenseBackUrl || formatted.licenseBackPhoto);
+        }
+      } catch (e) {
+        // fallback
+      }
+    })();
+  }, []);
 
   const handleUploadFront = async () => {
     try {

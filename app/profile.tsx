@@ -12,7 +12,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tw from '@/lib/tw';
-import riderApi, { getSavedRider } from '@/services/api';
+import riderApi, { getSavedRider, formatRiderData } from '@/services/api';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -23,15 +23,18 @@ export default function ProfileScreen() {
     (async () => {
       const saved = await getSavedRider();
       if (saved) {
-        setRider(saved);
-        if (saved.status) setIsOnline(saved.status === 'AVAILABLE');
+        const formatted = formatRiderData({}, saved);
+        setRider(formatted);
+        if (formatted.status) setIsOnline(formatted.status === 'AVAILABLE');
       }
 
       try {
         const res = await riderApi.getProfile();
-        if (res?.rider) {
-          setRider(res.rider);
-          if (res.rider.status) setIsOnline(res.rider.status === 'AVAILABLE');
+        if (res) {
+          const currentSaved = await getSavedRider();
+          const formatted = formatRiderData(res, currentSaved);
+          setRider(formatted);
+          if (formatted.status) setIsOnline(formatted.status === 'AVAILABLE');
         }
       } catch (e) {
         // fallback to saved
@@ -63,10 +66,11 @@ export default function ProfileScreen() {
     ]);
   };
 
-  const fullName = rider?.fullName || `${rider?.firstName || ''} ${rider?.lastName || ''}`.trim() || 'Harsha Perera';
+  const fullName = rider?.fullName || `${rider?.firstName || ''} ${rider?.lastName || ''}`.trim() || rider?.user?.name || 'Rider';
   const riderId = rider?.id ? `#YL-${rider.id.slice(0, 6).toUpperCase()}` : '#YL-8921';
   const rating = rider?.rating ? Number(rider.rating).toFixed(1) : '5.0';
   const completedCount = rider?.deliveriesCompleted ?? 0;
+  const profilePhoto = rider?.profilePhotoUrl || rider?.profilePhoto || rider?.profilePic;
 
   return (
     <SafeAreaView style={tw`flex-1 bg-[#FFC72C]`} edges={['top', 'bottom']}>
@@ -77,12 +81,16 @@ export default function ProfileScreen() {
         <View style={tw`bg-[#FFC72C] h-16 px-4 flex-row items-center justify-between shadow-sm`}>
           <TouchableOpacity
             onPress={() => router.push('/profile')}
-            style={tw`w-10 h-10 rounded-full border-2 border-white overflow-hidden bg-slate-200`}>
-            <Image
-              source={{ uri: rider?.profilePhotoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200' }}
-              style={tw`w-full h-full`}
-              resizeMode="cover"
-            />
+            style={tw`w-10 h-10 rounded-full border-2 border-white overflow-hidden bg-slate-200 items-center justify-center`}>
+            {profilePhoto ? (
+              <Image
+                source={{ uri: profilePhoto }}
+                style={tw`w-full h-full`}
+                resizeMode="cover"
+              />
+            ) : (
+              <Ionicons name="person" size={20} color="#64748B" />
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -106,12 +114,16 @@ export default function ProfileScreen() {
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={tw`p-4 pb-24 items-center`}>
           {/* Avatar Profile Section */}
           <View style={tw`items-center mb-6 mt-2 relative`}>
-            <View style={tw`w-24 h-24 rounded-full border-4 border-white shadow-lg overflow-hidden bg-slate-200`}>
-              <Image
-                source={{ uri: rider?.profilePhotoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=300' }}
-                style={tw`w-full h-full`}
-                resizeMode="cover"
-              />
+            <View style={tw`w-24 h-24 rounded-full border-4 border-white shadow-lg overflow-hidden bg-slate-200 items-center justify-center`}>
+              {profilePhoto ? (
+                <Image
+                  source={{ uri: profilePhoto }}
+                  style={tw`w-full h-full`}
+                  resizeMode="cover"
+                />
+              ) : (
+                <Ionicons name="person" size={48} color="#64748B" />
+              )}
             </View>
 
             {/* Edit Avatar Badge */}
@@ -119,14 +131,16 @@ export default function ProfileScreen() {
               activeOpacity={0.8}
               onPress={() => Alert.alert('Update Photo', 'Choose new profile photo from gallery.')}
               style={tw`absolute bottom-0 right-0 bg-[#0B1044] p-2 rounded-full border-2 border-white shadow-md`}>
-              <Ionicons name="camera" size={14} color="#FFFFFF" />
+              <Ionicons name="camera" size={14} color="#FFC72C" />
             </TouchableOpacity>
           </View>
 
-          {/* Rider Name & Rating */}
-          <Text style={tw`text-2xl font-black text-slate-900`}>{fullName}</Text>
-          <Text style={tw`text-xs font-bold text-slate-400 mt-0.5`}>Rider ID: {riderId}</Text>
-          <View style={tw`flex-row items-center gap-1.5 bg-amber-100 border border-amber-200 px-3 py-1 rounded-full mt-2`}>
+          {/* Name & ID */}
+          <Text style={tw`text-xl font-black text-slate-900`}>{fullName}</Text>
+          <Text style={tw`text-xs font-bold text-slate-400 mt-0.5`}>{riderId}</Text>
+
+          {/* Rating Pill */}
+          <View style={tw`bg-amber-100 px-3 py-1 rounded-full mt-2 flex-row items-center gap-1.5`}>
             <Ionicons name="star" size={14} color="#D97706" />
             <Text style={tw`text-xs font-black text-amber-900`}>{rating} Rating (Active Partner)</Text>
           </View>

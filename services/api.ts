@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Yaalu Rider App â€” API Service
  * Central service connecting Expo Rider frontend to NestJS backend.
  */
@@ -115,6 +115,100 @@ export async function getSavedRider(): Promise<any | null> {
   return raw ? JSON.parse(raw) : null;
 }
 
+export function formatRiderData(res: any, currentSaved?: any): any {
+  if (!res && !currentSaved) return null;
+  const u = res?.user || {};
+  const r = res?.rider || res?.riderProfile || {};
+
+  const getVal = (...keys: string[]): string => {
+    for (const key of keys) {
+      if (r && r[key] !== undefined && r[key] !== null && r[key] !== '') return String(r[key]);
+      if (u && u[key] !== undefined && u[key] !== null && u[key] !== '') return String(u[key]);
+      if (res && res[key] !== undefined && res[key] !== null && res[key] !== '') return String(res[key]);
+      if (currentSaved && currentSaved[key] !== undefined && currentSaved[key] !== null && currentSaved[key] !== '') return String(currentSaved[key]);
+    }
+    return '';
+  };
+
+  const fullName = getVal('fullName') || `${getVal('firstName')} ${getVal('lastName')}`.trim() || 'Rider Partner';
+  const firstName = getVal('firstName') || (fullName ? fullName.split(' ')[0] : 'Rider');
+  const lastName = getVal('lastName') || (fullName ? fullName.split(' ').slice(1).join(' ') : '');
+  const email = getVal('email');
+  const phone = getVal('phoneNumber', 'phone', 'mobile', 'contactNumber');
+  const nicNumber = getVal('nicNumber', 'nic');
+  const address = getVal('address', 'deliveryAddress');
+  const city = getVal('city');
+  const vehicleType = getVal('vehicleType') || 'MOTORBIKE';
+  const vehicleModel = getVal('vehicleModel');
+  const vehicleNumber = getVal('vehicleNumber', 'plateNumber');
+  const licenseNumber = getVal('licenseNumber', 'drivingLicense');
+  const licenseExpiry = getVal('licenseExpiry', 'licenseExpiryDate');
+  const bankName = getVal('bankName');
+  const accountHolder = getVal('accountHolder', 'accountName');
+  const accountNumber = getVal('accountNumber', 'accountNo');
+  const branchCode = getVal('branchCode', 'accountBranch');
+
+  // Images & Documents (Cloudinary URLs or local URIs)
+  const profilePhotoUrl = getVal('profilePhotoUrl', 'profilePicture', 'profilePhoto', 'profilePic', 'avatar');
+  const vehiclePhoto = getVal('vehiclePhoto', 'vehiclePhotoUrl', 'vehicleImage', 'photoUrl');
+  const registrationDoc = getVal('registrationDoc', 'registrationDocUrl', 'vehicleRegistration', 'registrationDocUri');
+  const licenseFrontUrl = getVal('licenseFrontUrl', 'licenseFrontPhoto');
+  const licenseBackUrl = getVal('licenseBackUrl', 'licenseBackPhoto');
+  const policeClearanceDoc = getVal('policeClearanceDoc');
+
+  const formatted = {
+    ...(currentSaved || {}),
+    ...(res || {}),
+    ...u,
+    ...r,
+    id: r.id || u.id || res?.id || currentSaved?.id,
+    userId: u.id || r.userId || res?.userId || currentSaved?.userId,
+    fullName,
+    firstName,
+    lastName,
+    email,
+    phone,
+    phoneNumber: phone,
+    mobile: phone,
+    nicNumber,
+    nic: nicNumber,
+    address,
+    city,
+    vehicleType,
+    vehicleModel,
+    vehicleNumber,
+    plateNumber: vehicleNumber,
+    licenseNumber,
+    drivingLicense: licenseNumber,
+    licenseExpiry,
+    licenseExpiryDate: licenseExpiry,
+    bankName,
+    accountHolder,
+    accountName: accountHolder,
+    accountNumber,
+    accountNo: accountNumber,
+    branchCode,
+    accountBranch: branchCode,
+    profilePhotoUrl,
+    profilePicture: profilePhotoUrl,
+    profilePhoto: profilePhotoUrl,
+    profilePic: profilePhotoUrl,
+    vehiclePhoto,
+    vehiclePhotoUrl: vehiclePhoto,
+    vehicleImage: vehiclePhoto,
+    registrationDoc,
+    registrationDocUrl: registrationDoc,
+    vehicleRegistration: registrationDoc,
+    licenseFrontUrl,
+    licenseFrontPhoto: licenseFrontUrl,
+    licenseBackUrl,
+    licenseBackPhoto: licenseBackUrl,
+    policeClearanceDoc,
+  };
+
+  return formatted;
+}
+
 // â”€â”€â”€ Temporary Registration Draft Storage â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const REG_DRAFT_KEY = 'rider_reg_draft';
 const SENSITIVE_DRAFT_FIELDS = new Set(['accountNumber', 'accountNo']);
@@ -149,7 +243,7 @@ async function request<T>(
   path: string,
   body?: object,
   useToken = true,
-  timeoutMs = 4000,
+  timeoutMs = 30000,
 ): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -443,18 +537,26 @@ return { success: true, message: 'OTP sent (Code: ' + generatedOtp + ')', otp: g
     await clearRegistrationDraft();
   },
 
-  // â”€â”€â”€ PROFILE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── PROFILE ──────────────────────────────────────────────────────────
   async getProfile() {
     const path = await withTokenParam('/riders/me');
     const res: any = await request('GET', path);
-    if (res?.rider) await saveRider(res.rider);
+    if (res) {
+      const currentSaved = await getSavedRider();
+      const mergedRider = formatRiderData(res, currentSaved);
+      await saveRider(mergedRider);
+    }
     return res;
   },
 
   async updateProfile(data: any) {
     const path = await withTokenParam('/riders/me');
     const res: any = await request('PATCH', path, data);
-    if (res?.rider) await saveRider(res.rider);
+    if (res) {
+      const currentSaved = await getSavedRider();
+      const mergedRider = formatRiderData(res, { ...currentSaved, ...data });
+      await saveRider(mergedRider);
+    }
     return res;
   },
 
@@ -513,12 +615,24 @@ return { success: true, message: 'OTP sent (Code: ' + generatedOtp + ')', otp: g
   // ─── BANK DETAILS ───────────────────────────────────────────
   async getBankDetails() {
     const path = await withTokenParam('/riders/me/bank');
-    return request('GET', path);
+    const res: any = await request('GET', path);
+    if (res) {
+      const currentSaved = await getSavedRider();
+      const mergedRider = formatRiderData({ rider: res }, currentSaved);
+      await saveRider(mergedRider);
+    }
+    return res;
   },
 
   async updateBankDetails(data: any) {
     const path = await withTokenParam('/riders/me/bank');
-    return request('PATCH', path, data);
+    const res: any = await request('PATCH', path, data);
+    if (res) {
+      const currentSaved = await getSavedRider();
+      const mergedRider = formatRiderData({ rider: res }, { ...currentSaved, ...data });
+      await saveRider(mergedRider);
+    }
+    return res;
   },
 
   // â”€â”€â”€ NOTIFICATIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

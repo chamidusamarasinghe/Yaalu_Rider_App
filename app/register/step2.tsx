@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tw from '@/lib/tw';
+import { riderRegistrationService } from '@/services/rider-registration-service';
 import riderApi, { saveRegistrationDraft, getRegistrationDraft } from '@/services/api';
 import { SRI_LANKA_MAIN_CITIES } from '@/constants/cities';
 
@@ -68,6 +69,7 @@ export default function RegisterStep2Screen() {
 
     try {
       setLoading(true);
+      riderRegistrationService.setDraft(payload);
       await saveRegistrationDraft(payload);
       // Non-blocking background sync to backend
       riderApi.registerStep2(payload).catch((backendErr: any) => {
@@ -80,6 +82,7 @@ export default function RegisterStep2Screen() {
       setLoading(false);
     }
   };
+
 
   return (
     <SafeAreaView style={tw`flex-1 bg-[#FFC72C]`} edges={['top', 'bottom']}>

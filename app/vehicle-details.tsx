@@ -5,8 +5,8 @@ import {
   TouchableOpacity,
   ScrollView,
   StatusBar as RNStatusBar,
-  TextInput,
   Image,
+  TextInput,
   Alert,
   ActivityIndicator,
 } from 'react-native';
@@ -14,31 +14,37 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tw from '@/lib/tw';
-import riderApi, { getSavedRider } from '@/services/api';
+import riderApi, { getSavedRider, getRegistrationDraft, formatRiderData } from '@/services/api';
 
 export default function VehicleDetailsScreen() {
   const router = useRouter();
-
+  const [rider, setRider] = useState<any>(null);
   const [model, setModel] = useState('');
-  const [vehicleType, setVehicleType] = useState('MOTORBIKE');
   const [plateNumber, setPlateNumber] = useState('');
+  const [vehicleType, setVehicleType] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     (async () => {
       const saved = await getSavedRider();
-      if (saved) {
-        if (saved.vehicleModel) setModel(saved.vehicleModel);
-        if (saved.vehicleNumber) setPlateNumber(saved.vehicleNumber);
-        if (saved.vehicleType) setVehicleType(saved.vehicleType);
+      const draft = await getRegistrationDraft();
+      const merged = formatRiderData(draft, saved);
+
+      if (merged) {
+        setRider(merged);
+        if (merged.vehicleModel) setModel(merged.vehicleModel);
+        if (merged.vehicleNumber || merged.plateNumber) setPlateNumber(merged.vehicleNumber || merged.plateNumber);
+        if (merged.vehicleType) setVehicleType(merged.vehicleType);
       }
 
       try {
         const res = await riderApi.getProfile();
-        if (res?.rider) {
-          if (res.rider.vehicleModel) setModel(res.rider.vehicleModel);
-          if (res.rider.vehicleNumber) setPlateNumber(res.rider.vehicleNumber);
-          if (res.rider.vehicleType) setVehicleType(res.rider.vehicleType);
+        if (res) {
+          const formatted = formatRiderData(res, merged);
+          setRider(formatted);
+          if (formatted.vehicleModel) setModel(formatted.vehicleModel);
+          if (formatted.vehicleNumber || formatted.plateNumber) setPlateNumber(formatted.vehicleNumber || formatted.plateNumber);
+          if (formatted.vehicleType) setVehicleType(formatted.vehicleType);
         }
       } catch (e) {
         // fallback
@@ -62,6 +68,8 @@ export default function VehicleDetailsScreen() {
     }
   };
 
+  const vehiclePhoto = rider?.vehiclePhoto || rider?.vehiclePhotoUrl || rider?.vehicleImage || rider?.vehiclePhotoUri || rider?.vehicle?.photoUrl || rider?.vehicle?.photo;
+
   return (
     <SafeAreaView style={tw`flex-1 bg-[#FFC72C]`} edges={['top', 'bottom']}>
       <RNStatusBar barStyle="dark-content" backgroundColor="#FFC72C" />
@@ -82,20 +90,26 @@ export default function VehicleDetailsScreen() {
 
           {/* Vehicle Summary Hero Card */}
           <View style={tw`bg-white rounded-3xl p-4 border border-slate-200 flex-row items-center gap-4 shadow-xs mb-4 relative`}>
-            <Image
-              source={{ uri: 'https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=300' }}
-              style={tw`w-28 h-24 rounded-2xl bg-slate-100`}
-              resizeMode="cover"
-            />
+            <View style={tw`w-28 h-24 rounded-2xl bg-slate-100 border border-slate-200 overflow-hidden items-center justify-center`}>
+              {vehiclePhoto ? (
+                <Image
+                  source={{ uri: vehiclePhoto }}
+                  style={tw`w-full h-full`}
+                  resizeMode="cover"
+                />
+              ) : (
+                <Ionicons name="bicycle" size={38} color="#94A3B8" />
+              )}
+            </View>
 
             <View style={tw`flex-1 pr-6`}>
-              <Text style={tw`text-base font-black text-slate-900`}>{model}</Text>
-              <Text style={tw`text-xs font-bold text-slate-400 mt-0.5`}>{vehicleType}</Text>
+              <Text style={tw`text-base font-black text-slate-900`}>{model || 'Vehicle'}</Text>
+              <Text style={tw`text-xs font-bold text-slate-400 mt-0.5`}>{vehicleType || 'Motorbike'}</Text>
 
               <Text style={tw`text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-2`}>
                 PLATE NUMBER
               </Text>
-              <Text style={tw`text-sm font-black text-slate-900`}>{plateNumber}</Text>
+              <Text style={tw`text-sm font-black text-slate-900`}>{plateNumber || 'Not specified'}</Text>
 
               <View style={tw`bg-emerald-100 self-start px-2 py-0.5 rounded-md mt-2 flex-row items-center gap-1`}>
                 <Ionicons name="checkmark-circle" size={12} color="#047857" />
