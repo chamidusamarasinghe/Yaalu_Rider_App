@@ -5,6 +5,7 @@
 
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
+import * as FileSystem from 'expo-file-system';
 
 let AsyncStorage: any = null;
 try {
@@ -483,7 +484,7 @@ return { success: true, message: 'OTP sent (Code: ' + generatedOtp + ')', otp: g
     [key: string]: any;
   }) {
     try {
-      const res: any = await request('POST', '/riders/register/step5', data, false, 3500);
+      const res: any = await request('POST', '/riders/register', { ...data, role: 'RIDER' }, false, 8000);
       if (res?.accessToken || res?.token) {
         const token = res.accessToken || res.token;
         await saveToken(token);
@@ -492,25 +493,8 @@ return { success: true, message: 'OTP sent (Code: ' + generatedOtp + ')', otp: g
       }
       return res;
     } catch (backendErr: any) {
-      // Offline fallback: save rider and token locally so user is never blocked
-      const fallbackRider = {
-        id: 'rider-reg-' + Date.now(),
-        fullName: data.fullName || `${data.firstName || 'Rider'} ${data.lastName || 'Partner'}`.trim(),
-        phone: data.phone || data.mobile || '+94771234567',
-        mobile: data.phone || data.mobile || '+94771234567',
-        email: data.email || '',
-        status: 'AVAILABLE',
-        isApproved: true,
-        vehicleType: data.vehicleType || 'MOTORBIKE',
-        vehicleNumber: data.vehicleNumber || 'WP CAB-1234',
-        bankName: data.bankName || 'Commercial Bank',
-        accountNumber: data.accountNumber || '8000123456',
-      };
-      const token = 'local-reg-jwt-' + Date.now();
-      await saveToken(token);
-      await saveRider(fallbackRider);
-      await clearRegistrationDraft();
-      return { accessToken: token, rider: fallbackRider };
+      console.warn('Registration to backend failed:', backendErr.message || backendErr);
+      throw backendErr;
     }
   },
 
@@ -669,11 +653,10 @@ export const uploadApi = {
         const blob = await response.blob();
         cloudinaryFormData.append('file', blob);
       } else {
-        cloudinaryFormData.append('file', {
-          uri,
-          name: filename,
-          type,
-        } as any);
+        // Read file as Base64 to bypass React Native FormData file quirks
+        const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+        const base64Image = `data:${type};base64,${base64}`;
+        cloudinaryFormData.append('file', base64Image);
       }
 
       const clRes = await fetch(

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Text,
   View,
@@ -11,6 +11,8 @@ import {
   Dimensions,
   Alert,
   Linking,
+  Animated,
+  Vibration,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,6 +21,7 @@ import tw from '@/lib/tw';
 import riderApi, { getSavedRider, formatRiderData } from '@/services/api';
 import InteractiveMap from '@/components/InteractiveMap';
 import { checkAndGetRiderLocation, LocationCoords } from '@/lib/location';
+import { useHireNotification } from '@/hooks/useHireNotification';
 
 const { width: W } = Dimensions.get('window');
 
@@ -89,6 +92,57 @@ export default function RiderDashboardScreen() {
   });
   const [isLocating, setIsLocating] = useState(false);
   const [scrollEnabled, setScrollEnabled] = useState(true);
+
+  // ─── Real-time Hire Notifications ──────────────────
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const slideAnim = useRef(new Animated.Value(-100)).current;
+
+  const {
+    hasNewHireRequest,
+    latestRequest,
+    availableCount: liveAvailableCount,
+    dismissNotification,
+    refresh: refreshNotifications,
+    socketConnected,
+  } = useHireNotification(isOnline);
+
+  // Pulse animation & vibrate when new request arrives
+  useEffect(() => {
+    if (hasNewHireRequest) {
+      // Vibrate to alert rider
+      Vibration.vibrate([0, 400, 200, 400]);
+
+      // Slide in banner
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 80,
+        friction: 8,
+      }).start();
+
+      // Pulse loop
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, { toValue: 1.04, duration: 600, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 1.0, duration: 600, useNativeDriver: true }),
+        ])
+      ).start();
+    } else {
+      // Slide out
+      Animated.timing(slideAnim, {
+        toValue: -100,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+      pulseAnim.stopAnimation();
+      pulseAnim.setValue(1);
+    }
+  }, [hasNewHireRequest]);
+
+  const handleNotificationTap = () => {
+    dismissNotification();
+    router.push('/new-requests');
+  };
 
   const fetchAndSetLocation = useCallback(async (updateBackend = true) => {
     setIsLocating(true);
@@ -169,6 +223,7 @@ export default function RiderDashboardScreen() {
   const onRefresh = async () => {
     setRefreshing(true);
     await Promise.all([loadData(), fetchAndSetLocation(true)]);
+    refreshNotifications();
     setRefreshing(false);
   };
 
@@ -258,6 +313,9 @@ export default function RiderDashboardScreen() {
     ? earnings.totalEarnings.toLocaleString('en-LK', { minimumFractionDigits: 2 })
     : '0.00';
 
+  // Use live count from socket/polling, fall back to REST count
+  const displayAvailableCount = liveAvailableCount > 0 ? liveAvailableCount : availableCount;
+
   return (
     <SafeAreaView style={tw`flex-1 bg-[#FFC72C]`} edges={['top']}>
       <RNStatusBar barStyle="dark-content" backgroundColor="#FFC72C" />
@@ -295,18 +353,76 @@ export default function RiderDashboardScreen() {
             </Text>
           </TouchableOpacity>
 
-          {/* Notification Bell */}
+          {/* Notification Bell with live badge */}
           <TouchableOpacity
             onPress={() => router.push('/notifications')}
             style={tw`w-10 h-10 rounded-full bg-[#0B1044]/10 items-center justify-center`}>
             <Ionicons name="notifications-outline" size={20} color="#0B1044" />
-            <View style={tw`w-2 h-2 rounded-full bg-red-500 absolute top-1.5 right-1.5`} />
+            {displayAvailableCount > 0 && (
+              <View style={tw`absolute top-0.5 right-0.5 min-w-4 h-4 rounded-full bg-red-500 items-center justify-center px-0.5`}>
+                <Text style={tw`text-[9px] font-black text-white`}>
+                  {displayAvailableCount > 9 ? '9+' : displayAvailableCount}
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
       </View>
 
       {/* â”€â”€ BODY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <View style={tw`flex-1 bg-[#F4F6FB] rounded-t-3xl overflow-hidden`}>
+
+        {/* ── NEW HIRE REQUEST NOTIFICATION BANNER ── */}
+        <Animated.View
+          pointerEvents={hasNewHireRequest ? 'auto' : 'none'}
+          style={[
+            tw`absolute top-0 left-0 right-0 z-50 px-4 pt-3`,
+            { transform: [{ translateY: slideAnim }] },
+          ]}
+        >
+          <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={handleNotificationTap}
+              style={[
+                tw`bg-[#0B1044] rounded-2xl p-4 flex-row items-center justify-between shadow-lg border border-[#FFC72C]`,
+                { elevation: 12 },
+              ]}
+            >
+              {/* Left: icon + text */}
+              <View style={tw`flex-row items-center gap-3 flex-1 mr-2`}>
+                <View style={tw`w-11 h-11 rounded-xl bg-[#FFC72C] items-center justify-center`}>
+                  <Ionicons name="car" size={22} color="#0B1044" />
+                </View>
+                <View style={tw`flex-1`}>
+                  <Text style={tw`text-sm font-black text-[#FFC72C]`}>
+                    {latestRequest?.title || '🚗 New Hire Request!'}
+                  </Text>
+                  <Text style={tw`text-xs text-white/80 font-semibold mt-0.5`} numberOfLines={1}>
+                    {latestRequest?.body || 'Requests right now — tap to view'}
+                  </Text>
+                  <Text style={tw`text-[10px] text-[#FFC72C]/60 font-bold mt-0.5`}>
+                    Requests right now ⚡
+                  </Text>
+                </View>
+              </View>
+
+              {/* Right: action + dismiss */}
+              <View style={tw`items-end gap-1.5`}>
+                <View style={tw`bg-[#FFC72C] rounded-lg px-3 py-1.5`}>
+                  <Text style={tw`text-[11px] font-black text-[#0B1044]`}>View →</Text>
+                </View>
+                <TouchableOpacity
+                  onPress={dismissNotification}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Text style={tw`text-[10px] text-white/50`}>Dismiss</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          </Animated.View>
+        </Animated.View>
+
         <ScrollView
           scrollEnabled={scrollEnabled}
           showsVerticalScrollIndicator={false}
@@ -447,8 +563,13 @@ export default function RiderDashboardScreen() {
             </View>
           </View>
 
+<<<<<<< HEAD
           {/* â”€â”€ NEW REQUESTS BANNER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           {availableCount > 0 && (
+=======
+          {/* ── NEW REQUESTS BANNER ──────────────── */}
+          {displayAvailableCount > 0 && (
+>>>>>>> origin/main
             <TouchableOpacity
               activeOpacity={0.9}
               onPress={() => router.push('/new-requests')}
@@ -459,9 +580,11 @@ export default function RiderDashboardScreen() {
                 </View>
                 <View>
                   <Text style={tw`text-sm font-black text-[#0B1044]`}>
-                    {availableCount} New Request{availableCount !== 1 ? 's' : ''} Available!
+                    {displayAvailableCount} New Request{displayAvailableCount !== 1 ? 's' : ''} Available!
                   </Text>
-                  <Text style={tw`text-xs font-medium text-[#0B1044]/70`}>Tap to see nearby orders</Text>
+                  <Text style={tw`text-xs font-medium text-[#0B1044]/70`}>
+                    {socketConnected ? '🟢 Live' : '⏱ Polling'} · Tap to see nearby orders
+                  </Text>
                 </View>
               </View>
               <View style={tw`bg-[#0B1044] rounded-lg px-3 py-2`}>
@@ -471,7 +594,7 @@ export default function RiderDashboardScreen() {
           )}
 
           {/* No requests pill */}
-          {availableCount === 0 && (
+          {displayAvailableCount === 0 && (
             <TouchableOpacity
               onPress={() => router.push('/new-requests')}
               style={tw`bg-white border border-slate-200 rounded-2xl p-3.5 flex-row items-center gap-3 mb-4`}>
