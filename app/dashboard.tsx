@@ -563,13 +563,8 @@ export default function RiderDashboardScreen() {
             </View>
           </View>
 
-<<<<<<< HEAD
-          {/* â”€â”€ NEW REQUESTS BANNER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-          {availableCount > 0 && (
-=======
           {/* ── NEW REQUESTS BANNER ──────────────── */}
           {displayAvailableCount > 0 && (
->>>>>>> origin/main
             <TouchableOpacity
               activeOpacity={0.9}
               onPress={() => router.push('/new-requests')}
@@ -678,4 +673,3 @@ export default function RiderDashboardScreen() {
     </SafeAreaView>
   );
 }
-
