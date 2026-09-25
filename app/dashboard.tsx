@@ -14,7 +14,7 @@ import {
   Animated,
   Vibration,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tw from '@/lib/tw';
@@ -22,6 +22,7 @@ import riderApi, { getSavedRider, formatRiderData } from '@/services/api';
 import InteractiveMap from '@/components/InteractiveMap';
 import { checkAndGetRiderLocation, LocationCoords } from '@/lib/location';
 import { useHireNotification } from '@/hooks/useHireNotification';
+import { markNotificationsAsViewed } from '@/lib/notificationsStorage';
 import { WebView } from 'react-native-webview';
 
 function NotificationSoundPlayer({ soundTrigger }: { soundTrigger: number }) {
@@ -138,6 +139,13 @@ export default function RiderDashboardScreen() {
     refresh: refreshNotifications,
     socketConnected,
   } = useHireNotification(isOnline);
+
+  // Refresh notifications & unread badge count immediately whenever dashboard comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      refreshNotifications();
+    }, [refreshNotifications])
+  );
 
   // Slide in banner & pulse animation when new hire request arrives
   useEffect(() => {
@@ -343,8 +351,8 @@ export default function RiderDashboardScreen() {
     ? earnings.totalEarnings.toLocaleString('en-LK', { minimumFractionDigits: 2 })
     : '0.00';
 
-  // Use live count from socket/polling, fall back to REST count
-  const displayAvailableCount = liveAvailableCount > 0 ? liveAvailableCount : availableCount;
+  // Bell icon badge count: shows unread notifications count from liveAvailableCount
+  const displayAvailableCount = liveAvailableCount;
 
   return (
     <SafeAreaView style={tw`flex-1 bg-[#FFC72C]`} edges={['top']}>
@@ -385,7 +393,11 @@ export default function RiderDashboardScreen() {
 
           {/* Notification Bell with live badge */}
           <TouchableOpacity
-            onPress={() => router.push('/notifications')}
+            onPress={async () => {
+              await markNotificationsAsViewed();
+              refreshNotifications();
+              router.push('/notifications');
+            }}
             style={tw`w-10 h-10 rounded-full bg-[#0B1044]/10 items-center justify-center`}>
             <Ionicons name="notifications-outline" size={20} color="#0B1044" />
             {displayAvailableCount > 0 && (

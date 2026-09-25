@@ -7,12 +7,18 @@ import {
   StatusBar as RNStatusBar,
   ActivityIndicator,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tw from '@/lib/tw';
 import riderApi from '@/services/api';
+import {
+  markNotificationsAsViewed,
+  getLastClearedNotifTime,
+  clearAllNotificationsStorage,
+} from '@/lib/notificationsStorage';
 
 export default function NotificationsScreen() {
   const router = useRouter();
@@ -23,9 +29,22 @@ export default function NotificationsScreen() {
 
   const fetchNotifications = async () => {
     try {
-      const res: any = await riderApi.getNotifications();
+      // 1. Mark as viewed immediately so badge number hides
+      await markNotificationsAsViewed();
+
+      const [res, lastClearedTime]: [any, number] = await Promise.all([
+        riderApi.getNotifications(),
+        getLastClearedNotifTime(),
+      ]);
+
       if (Array.isArray(res)) {
-        setNotifications(res);
+        // Filter out notifications cleared prior to lastClearedTime
+        const validNotifs = res.filter((item: any) => {
+          if (!lastClearedTime) return true;
+          const itemTime = item.createdAt ? new Date(item.createdAt).getTime() : Date.now();
+          return itemTime > lastClearedTime;
+        });
+        setNotifications(validNotifs);
       } else {
         setNotifications([]);
       }
@@ -46,6 +65,24 @@ export default function NotificationsScreen() {
     fetchNotifications();
   };
 
+  const handleClearAll = () => {
+    Alert.alert(
+      'Clear Notifications',
+      'Are you sure you want to clear all notification alerts?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear All',
+          style: 'destructive',
+          onPress: async () => {
+            await clearAllNotificationsStorage();
+            setNotifications([]);
+          },
+        },
+      ]
+    );
+  };
+
   const filteredNotifications = notifications.filter(
     (n) => activeTab === 'All' || n.type === activeTab
   );
@@ -61,8 +98,18 @@ export default function NotificationsScreen() {
             <TouchableOpacity onPress={() => router.back()} style={tw`p-1`}>
               <Ionicons name="arrow-back" size={24} color="#0B1044" />
             </TouchableOpacity>
-            <Text style={tw`text-xl font-extrabold text-[#0B1044]`}>System Notifications</Text>
+            <Text style={tw`text-xl font-extrabold text-[#0B1044]`}>Notifications</Text>
           </View>
+
+          {/* Clear All Button */}
+          {notifications.length > 0 && (
+            <TouchableOpacity
+              onPress={handleClearAll}
+              style={tw`flex-row items-center gap-1 bg-[#0B1044]/10 px-3 py-1.5 rounded-full`}>
+              <Ionicons name="trash-outline" size={16} color="#0B1044" />
+              <Text style={tw`text-xs font-black text-[#0B1044]`}>Clear All</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Tabs */}

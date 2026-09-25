@@ -15,6 +15,10 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Vibration } from 'react-native';
 import { getBaseUrl, getToken } from '@/services/api';
 import riderApi from '@/services/api';
+import {
+  getLastViewedNotifTime,
+  getLastClearedNotifTime,
+} from '@/lib/notificationsStorage';
 
 export interface HireRequestNotification {
   id: string;
@@ -90,7 +94,6 @@ export function useHireNotification(isOnline: boolean = true): UseHireNotificati
 
     setLatestRequest(notification);
     setHasNewHireRequest(true);
-    setAvailableCount((prev) => prev + 1);
 
     if (playSound) {
       triggerAlert();
@@ -105,10 +108,29 @@ export function useHireNotification(isOnline: boolean = true): UseHireNotificati
       const rides: any[] = await riderApi.getAvailableRides() as any;
       if (!Array.isArray(rides)) return;
 
-      setAvailableCount(rides.length);
+      const [lastViewedTime, lastClearedTime] = await Promise.all([
+        getLastViewedNotifTime(),
+        getLastClearedNotifTime(),
+      ]);
+
+      // Filter out cleared items
+      const validRides = rides.filter((r) => {
+        if (!lastClearedTime) return true;
+        const itemTime = r.createdAt ? new Date(r.createdAt).getTime() : Date.now();
+        return itemTime > lastClearedTime;
+      });
+
+      // Unread badge count: items created AFTER lastViewedTime
+      const unreadRides = validRides.filter((r) => {
+        if (!lastViewedTime) return true;
+        const itemTime = r.createdAt ? new Date(r.createdAt).getTime() : Date.now();
+        return itemTime > lastViewedTime;
+      });
+
+      setAvailableCount(unreadRides.length);
 
       let anyNew = false;
-      for (const ride of rides) {
+      for (const ride of validRides) {
         // Add to seen set, but suppress per-item sound inside loop
         const added = handleNewRide({
           rideRequest: ride,
