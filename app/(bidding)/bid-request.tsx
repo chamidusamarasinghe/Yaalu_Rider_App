@@ -126,7 +126,7 @@ export default function BidRequestScreen() {
                 Multiple drivers can accept this hire and compete through bidding.
               </Text>
             </View>
-            <View style={tw`w-36 h-32 rounded-2xl overflow-hidden shadow-xs border border-slate-200 ml-3`}>
+            <View style={tw`w-36 h-32 rounded-2xl overflow-hidden shadow-sm border border-slate-200 ml-3`}>
               <InteractiveMap
                 height={128}
                 center={{ latitude: 6.9271, longitude: 79.8612 }}

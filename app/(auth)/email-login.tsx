@@ -67,7 +67,7 @@ export default function EmailLoginScreen() {
         {/* ── LOGO SECTION ──────────────────────────── */}
         <View style={tw`items-center justify-center pt-6 pb-5 px-6`}>
           <View style={tw`w-20 h-20 rounded-full bg-[#0B1044]/10 items-center justify-center mb-2 shadow-sm`}>
-            <View style={tw`w-16 h-16 rounded-full bg-white items-center justify-center shadow-xs`}>
+            <View style={tw`w-16 h-16 rounded-full bg-white items-center justify-center shadow-sm`}>
               <YaaluLogo size={58} showWordmark={false} variant="badge" />
             </View>
           </View>
@@ -100,7 +100,7 @@ export default function EmailLoginScreen() {
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={tw`flex-1 py-2.5 rounded-xl items-center justify-center flex-row gap-1.5 bg-white shadow-xs`}>
+                style={tw`flex-1 py-2.5 rounded-xl items-center justify-center flex-row gap-1.5 bg-white shadow-sm`}>
                 <Ionicons name="mail-outline" size={16} color="#0B1044" />
                 <Text style={tw`text-xs font-black text-[#0B1044]`}>Email Login</Text>
               </TouchableOpacity>

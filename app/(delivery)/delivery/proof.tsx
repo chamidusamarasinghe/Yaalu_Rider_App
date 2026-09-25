@@ -121,7 +121,7 @@ export default function ProofOfDeliveryScreen() {
                     onChangeText={(t) => handleOtpChange(t, idx)}
                     keyboardType="number-pad"
                     maxLength={1}
-                    style={tw`w-full h-full border border-slate-300 rounded-xl text-center text-lg font-bold text-slate-900 bg-white shadow-xs focus:border-blue-600 focus:bg-blue-50/20`}
+                    style={tw`w-full h-full border border-slate-300 rounded-xl text-center text-lg font-bold text-slate-900 bg-white shadow-sm focus:border-blue-600 focus:bg-blue-50/20`}
                   />
                 </View>
               ))}

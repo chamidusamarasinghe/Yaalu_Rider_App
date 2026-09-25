@@ -172,7 +172,7 @@ export default function RegisterStep1Screen() {
                 activeOpacity={0.8}
                 onPress={handlePickImage}
                 disabled={isUploading}
-                style={tw`w-24 h-24 rounded-full border-2 border-dashed border-indigo-400 bg-white items-center justify-center shadow-xs overflow-hidden relative`}>
+                style={tw`w-24 h-24 rounded-full border-2 border-dashed border-indigo-400 bg-white items-center justify-center shadow-sm overflow-hidden relative`}>
                 {profilePicture ? (
                   <Image source={{ uri: profilePicture }} style={tw`w-full h-full rounded-full`} resizeMode="cover" />
                 ) : isUploading ? (

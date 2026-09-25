@@ -51,7 +51,7 @@ export default function OrderDetailsScreen() {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={tw`p-4 pb-10 gap-4`}>
         {/* Header Order Card */}
-        <View style={tw`bg-white rounded-3xl p-5 border border-slate-200 shadow-xs`}>
+        <View style={tw`bg-white rounded-3xl p-5 border border-slate-200 shadow-sm`}>
           <View style={tw`flex-row justify-between items-start`}>
             <View>
               <Text style={tw`text-lg font-black text-slate-900`}>Order #YL-8921</Text>
@@ -81,7 +81,7 @@ export default function OrderDetailsScreen() {
             <View style={tw`w-7 h-7 rounded-full bg-white items-center justify-center shadow-md`}>
               <View style={tw`w-3 h-3 rounded-full bg-red-500`} />
             </View>
-            <View style={tw`bg-white px-1.5 py-0.5 rounded shadow-xs mt-1`}>
+            <View style={tw`bg-white px-1.5 py-0.5 rounded shadow-sm mt-1`}>
               <Text style={tw`text-[9px] font-bold text-slate-800`}>Market</Text>
             </View>
           </View>
@@ -103,7 +103,7 @@ export default function OrderDetailsScreen() {
         </View>
 
         {/* Pickup & Drop-off Card */}
-        <View style={tw`bg-white rounded-3xl p-5 border border-slate-200 shadow-xs`}>
+        <View style={tw`bg-white rounded-3xl p-5 border border-slate-200 shadow-sm`}>
           {/* Pickup */}
           <View style={tw`flex-row items-start justify-between`}>
             <View style={tw`flex-row items-start gap-3 flex-1`}>
@@ -133,7 +133,7 @@ export default function OrderDetailsScreen() {
         </View>
 
         {/* Trip Metrics Grid (3 Columns) */}
-        <View style={tw`bg-white rounded-3xl p-4 flex-row justify-between border border-slate-200 shadow-xs`}>
+        <View style={tw`bg-white rounded-3xl p-4 flex-row justify-between border border-slate-200 shadow-sm`}>
           {/* Distance */}
           <View style={tw`flex-1 items-center border-r border-slate-100 pr-2`}>
             <View style={tw`w-10 h-10 rounded-full bg-emerald-50 items-center justify-center mb-2`}>
@@ -163,7 +163,7 @@ export default function OrderDetailsScreen() {
         </View>
 
         {/* Earnings Breakdown */}
-        <View style={tw`bg-white rounded-3xl p-5 border border-slate-200 shadow-xs`}>
+        <View style={tw`bg-white rounded-3xl p-5 border border-slate-200 shadow-sm`}>
           <Text style={tw`text-base font-black text-slate-900 mb-4`}>Earnings Breakdown</Text>
 
           <View style={tw`gap-3`}>
@@ -195,7 +195,7 @@ export default function OrderDetailsScreen() {
         </View>
 
         {/* Payout Status */}
-        <View style={tw`bg-white rounded-3xl p-5 border border-slate-200 shadow-xs`}>
+        <View style={tw`bg-white rounded-3xl p-5 border border-slate-200 shadow-sm`}>
           <Text style={tw`text-base font-black text-slate-900 mb-4`}>Payout Status</Text>
 
           <View style={tw`flex-row items-center gap-3 mb-4`}>

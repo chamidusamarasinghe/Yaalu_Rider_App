@@ -45,9 +45,9 @@ export default function DeliveryStep2Screen() {
         <Text style={tw`text-xl font-black text-slate-900 mb-3`}>Order #YA-4587</Text>
 
         {/* Customer Info Box */}
-        <View style={tw`w-full bg-white rounded-2xl p-3.5 flex-row items-center justify-between border border-slate-200 mb-5 shadow-xs`}>
+        <View style={tw`w-full bg-white rounded-2xl p-3.5 flex-row items-center justify-between border border-slate-200 mb-5 shadow-sm`}>
           <View style={tw`flex-row items-center gap-3`}>
-            <View style={tw`w-12 h-12 rounded-full overflow-hidden bg-slate-200 border border-white shadow-xs`}>
+            <View style={tw`w-12 h-12 rounded-full overflow-hidden bg-slate-200 border border-white shadow-sm`}>
               <Image
                 source={{ uri: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200' }}
                 style={tw`w-full h-full`}

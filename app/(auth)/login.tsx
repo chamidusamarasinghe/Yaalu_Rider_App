@@ -129,7 +129,7 @@ export default function LoginScreen() {
         {/* ── LOGO SECTION ──────────────────────────── */}
         <View style={tw`items-center justify-center pt-6 pb-5 px-6`}>
           <View style={tw`w-20 h-20 rounded-full bg-[#0B1044]/10 items-center justify-center mb-2 shadow-sm`}>
-            <View style={tw`w-16 h-16 rounded-full bg-white items-center justify-center shadow-xs`}>
+            <View style={tw`w-16 h-16 rounded-full bg-white items-center justify-center shadow-sm`}>
               <YaaluLogo size={58} showWordmark={false} variant="badge" />
             </View>
           </View>
@@ -165,7 +165,7 @@ export default function LoginScreen() {
                 }}
                 style={[
                   tw`flex-1 py-2.5 rounded-xl items-center justify-center flex-row gap-1.5`,
-                  authMode === 'mobile' ? tw`bg-white shadow-xs` : {},
+                  authMode === 'mobile' ? tw`bg-white shadow-sm` : {},
                 ]}>
                 <Ionicons
                   name="call-outline"
@@ -188,7 +188,7 @@ export default function LoginScreen() {
                 }}
                 style={[
                   tw`flex-1 py-2.5 rounded-xl items-center justify-center flex-row gap-1.5`,
-                  authMode === 'email' ? tw`bg-white shadow-xs` : {},
+                  authMode === 'email' ? tw`bg-white shadow-sm` : {},
                 ]}>
                 <Ionicons
                   name="mail-outline"

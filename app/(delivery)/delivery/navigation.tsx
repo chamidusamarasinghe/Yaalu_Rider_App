@@ -33,7 +33,7 @@ export default function LiveNavigationScreen() {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={tw`pb-20`}>
         {/* Top Pickup to Drop-off Route Banner */}
-        <View style={tw`bg-white px-5 py-3 shadow-xs border-b border-slate-100 flex-row items-center justify-between`}>
+        <View style={tw`bg-white px-5 py-3 shadow-sm border-b border-slate-100 flex-row items-center justify-between`}>
           <View style={tw`flex-row items-center gap-2 flex-1 mr-2`}>
             <View style={tw`w-2.5 h-2.5 rounded-full bg-emerald-500`} />
             <View style={tw`flex-1`}>
@@ -91,7 +91,7 @@ export default function LiveNavigationScreen() {
         {/* Bottom Route Details & Trip Progress */}
         <View style={tw`p-5 gap-3`}>
           {/* Distance, Est. Time, Est. Arrival */}
-          <View style={tw`bg-white rounded-2xl p-4 border border-slate-200 flex-row justify-between items-center shadow-xs`}>
+          <View style={tw`bg-white rounded-2xl p-4 border border-slate-200 flex-row justify-between items-center shadow-sm`}>
             <View style={tw`flex-row items-center gap-2.5`}>
               <View style={tw`w-9 h-9 rounded-full bg-emerald-50 items-center justify-center`}>
                 <Ionicons name="swap-horizontal" size={18} color="#059669" />
@@ -124,7 +124,7 @@ export default function LiveNavigationScreen() {
           </View>
 
           {/* Turn Banner */}
-          <View style={tw`bg-white rounded-2xl p-4 border border-slate-200 shadow-xs`}>
+          <View style={tw`bg-white rounded-2xl p-4 border border-slate-200 shadow-sm`}>
             <View style={tw`flex-row items-center gap-3`}>
               <View style={tw`w-10 h-10 rounded-xl bg-[#070A2A] items-center justify-center`}>
                 <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
@@ -157,7 +157,7 @@ export default function LiveNavigationScreen() {
             <TouchableOpacity
               activeOpacity={0.85}
               onPress={() => router.push('/delivery/step1')}
-              style={tw`bg-white border border-emerald-300 px-4 py-2 rounded-xl shadow-xs`}>
+              style={tw`bg-white border border-emerald-300 px-4 py-2 rounded-xl shadow-sm`}>
               <Text style={tw`text-xs font-extrabold text-emerald-800`}>Status</Text>
             </TouchableOpacity>
           </View>

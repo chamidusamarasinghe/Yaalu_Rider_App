@@ -161,7 +161,7 @@ export default function RegisterStep5BankingScreen() {
           </View>
 
           {/* BANKING DETAILS CARD */}
-          <View style={tw`bg-white rounded-3xl p-5 border border-slate-200 mb-5 shadow-xs gap-4`}>
+          <View style={tw`bg-white rounded-3xl p-5 border border-slate-200 mb-5 shadow-sm gap-4`}>
             <View style={tw`flex-row items-center gap-2 mb-1`}>
               <Ionicons name="wallet-outline" size={22} color="#0B1044" />
               <Text style={tw`text-base font-extrabold text-[#0B1044]`}>Payout Bank Account</Text>
@@ -230,7 +230,7 @@ export default function RegisterStep5BankingScreen() {
           </View>
 
           {/* ACCOUNT SECURITY CARD */}
-          <View style={tw`bg-white rounded-3xl p-5 border border-slate-200 mb-6 shadow-xs gap-4`}>
+          <View style={tw`bg-white rounded-3xl p-5 border border-slate-200 mb-6 shadow-sm gap-4`}>
             <View style={tw`flex-row items-center gap-2 mb-1`}>
               <Ionicons name="lock-closed-outline" size={22} color="#0B1044" />
               <Text style={tw`text-base font-extrabold text-[#0B1044]`}>Create Password</Text>
