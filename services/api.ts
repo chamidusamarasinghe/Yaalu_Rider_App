@@ -5,7 +5,12 @@
 
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
-import * as FileSystem from 'expo-file-system';
+let FileSystem: any = null;
+try {
+  FileSystem = require('expo-file-system');
+} catch {
+  FileSystem = null;
+}
 
 let AsyncStorage: any = null;
 try {
@@ -565,7 +570,7 @@ return { success: true, message: 'OTP sent (Code: ' + generatedOtp + ')', otp: g
 
 // ─── RIDES / HIRES (RideRequest) ─────────────────────────────
   async getAvailableRides() {
-    return request('GET', '/deliveries/rides/available', undefined, true);
+    return this.getAvailableOrders();
   },
 
   async acceptRide(rideRequestId: string, bidId?: string) {
@@ -628,11 +633,13 @@ export const uploadApi = {
         const response = await fetch(uri);
         const blob = await response.blob();
         cloudinaryFormData.append('file', blob);
-      } else {
+      } else if (FileSystem && FileSystem.readAsStringAsync && FileSystem.EncodingType) {
         // Read file as Base64 to bypass React Native FormData file quirks
         const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
         const base64Image = `data:${type};base64,${base64}`;
         cloudinaryFormData.append('file', base64Image);
+      } else {
+        cloudinaryFormData.append('file', { uri, type, name: filename } as any);
       }
 
       const clRes = await fetch(

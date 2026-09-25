@@ -26,13 +26,11 @@ export default function NewRequestsScreen() {
     try {
       const res: any = await riderApi.getAvailableOrders();
       if (Array.isArray(res)) {
-        // Note: Adding a simulated rideType here because the backend Order model doesn't have it yet.
-        // We'll treat every alternate order as a BID for testing purposes, or use the real one if it exists.
-        const withRideType = res.map((r, i) => ({
+        const mapped = res.map((r) => ({
           ...r,
-          rideType: r.rideType || (i % 2 === 0 ? 'BID' : 'STANDARD'),
+          rideType: r.rideType || 'STANDARD',
         }));
-        setAvailableOrders(withRideType);
+        setAvailableOrders(mapped);
       } else {
         setAvailableOrders([]);
       }

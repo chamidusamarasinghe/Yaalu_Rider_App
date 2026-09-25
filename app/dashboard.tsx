@@ -14,7 +14,7 @@ import {
   Animated,
   Vibration,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tw from '@/lib/tw';
@@ -22,6 +22,39 @@ import riderApi, { getSavedRider, formatRiderData } from '@/services/api';
 import InteractiveMap from '@/components/InteractiveMap';
 import { checkAndGetRiderLocation, LocationCoords } from '@/lib/location';
 import { useHireNotification } from '@/hooks/useHireNotification';
+import { markNotificationsAsViewed } from '@/lib/notificationsStorage';
+import { WebView } from 'react-native-webview';
+
+function NotificationSoundPlayer({ soundTrigger }: { soundTrigger: number }) {
+  if (!soundTrigger) return null;
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+    <body style="background:transparent;margin:0;padding:0;">
+      <audio id="audio" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" autoplay volume="1.0"></audio>
+      <script>
+        const a = document.getElementById('audio');
+        a.play().catch(function(e) { console.log('Audio autoplay', e); });
+      </script>
+    </body>
+    </html>
+  `;
+
+  return (
+    <View style={{ width: 1, height: 1, opacity: 0.01, position: 'absolute', top: -10, left: -10 }}>
+      <WebView
+        key={soundTrigger}
+        source={{ html: htmlContent }}
+        mediaPlaybackRequiresUserAction={false}
+        allowsInlineMediaPlayback={true}
+        javaScriptEnabled={true}
+        style={{ width: 1, height: 1, opacity: 0.01 }}
+      />
+    </View>
+  );
+}
 
 const { width: W } = Dimensions.get('window');
 
@@ -101,17 +134,22 @@ export default function RiderDashboardScreen() {
     hasNewHireRequest,
     latestRequest,
     availableCount: liveAvailableCount,
+    soundTrigger,
     dismissNotification,
     refresh: refreshNotifications,
     socketConnected,
   } = useHireNotification(isOnline);
 
-  // Pulse animation & vibrate when new request arrives
+  // Refresh notifications & unread badge count immediately whenever dashboard comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      refreshNotifications();
+    }, [refreshNotifications])
+  );
+
+  // Slide in banner & pulse animation when new hire request arrives
   useEffect(() => {
     if (hasNewHireRequest) {
-      // Vibrate to alert rider
-      Vibration.vibrate([0, 400, 200, 400]);
-
       // Slide in banner
       Animated.spring(slideAnim, {
         toValue: 0,
@@ -313,8 +351,8 @@ export default function RiderDashboardScreen() {
     ? earnings.totalEarnings.toLocaleString('en-LK', { minimumFractionDigits: 2 })
     : '0.00';
 
-  // Use live count from socket/polling, fall back to REST count
-  const displayAvailableCount = liveAvailableCount > 0 ? liveAvailableCount : availableCount;
+  // Bell icon badge count: shows unread notifications count from liveAvailableCount
+  const displayAvailableCount = liveAvailableCount;
 
   return (
     <SafeAreaView style={tw`flex-1 bg-[#FFC72C]`} edges={['top']}>
@@ -355,7 +393,11 @@ export default function RiderDashboardScreen() {
 
           {/* Notification Bell with live badge */}
           <TouchableOpacity
-            onPress={() => router.push('/notifications')}
+            onPress={async () => {
+              await markNotificationsAsViewed();
+              refreshNotifications();
+              router.push('/notifications');
+            }}
             style={tw`w-10 h-10 rounded-full bg-[#0B1044]/10 items-center justify-center`}>
             <Ionicons name="notifications-outline" size={20} color="#0B1044" />
             {displayAvailableCount > 0 && (
@@ -648,10 +690,10 @@ export default function RiderDashboardScreen() {
                     </View>
                     <View style={tw`flex-1`}>
                       <Text style={tw`text-xs font-bold text-slate-900`} numberOfLines={1}>
-                        {item.pickupAddress} â†’ {item.dropoffAddress}
+                        {item?.pickupAddress || 'Trip'} → {item?.dropoffAddress || 'Destination'}
                       </Text>
                       <Text style={tw`text-[10px] text-slate-400 mt-0.5`}>
-                        {item.orderNumber} â€¢ {item.dateGroup || 'Today'}
+                        {item?.orderNumber || 'ORD'} • {item?.dateGroup || 'Today'}
                       </Text>
                     </View>
                   </View>
@@ -667,9 +709,11 @@ export default function RiderDashboardScreen() {
           </View>
         </ScrollView>
 
-        {/* â”€â”€ BOTTOM NAV â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* ─── BOTTOM NAV ──────────────────────── */}
         <BottomNav active="dashboard" />
       </View>
+
+      <NotificationSoundPlayer soundTrigger={soundTrigger} />
     </SafeAreaView>
   );
 }
