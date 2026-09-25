@@ -22,6 +22,38 @@ import riderApi, { getSavedRider, formatRiderData } from '@/services/api';
 import InteractiveMap from '@/components/InteractiveMap';
 import { checkAndGetRiderLocation, LocationCoords } from '@/lib/location';
 import { useHireNotification } from '@/hooks/useHireNotification';
+import { WebView } from 'react-native-webview';
+
+function NotificationSoundPlayer({ soundTrigger }: { soundTrigger: number }) {
+  if (!soundTrigger) return null;
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+    <body style="background:transparent;margin:0;padding:0;">
+      <audio id="audio" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" autoplay volume="1.0"></audio>
+      <script>
+        const a = document.getElementById('audio');
+        a.play().catch(function(e) { console.log('Audio autoplay', e); });
+      </script>
+    </body>
+    </html>
+  `;
+
+  return (
+    <View style={{ width: 1, height: 1, opacity: 0.01, position: 'absolute', top: -10, left: -10 }}>
+      <WebView
+        key={soundTrigger}
+        source={{ html: htmlContent }}
+        mediaPlaybackRequiresUserAction={false}
+        allowsInlineMediaPlayback={true}
+        javaScriptEnabled={true}
+        style={{ width: 1, height: 1, opacity: 0.01 }}
+      />
+    </View>
+  );
+}
 
 const { width: W } = Dimensions.get('window');
 
@@ -101,17 +133,15 @@ export default function RiderDashboardScreen() {
     hasNewHireRequest,
     latestRequest,
     availableCount: liveAvailableCount,
+    soundTrigger,
     dismissNotification,
     refresh: refreshNotifications,
     socketConnected,
   } = useHireNotification(isOnline);
 
-  // Pulse animation & vibrate when new request arrives
+  // Slide in banner & pulse animation when new hire request arrives
   useEffect(() => {
     if (hasNewHireRequest) {
-      // Vibrate to alert rider
-      Vibration.vibrate([0, 400, 200, 400]);
-
       // Slide in banner
       Animated.spring(slideAnim, {
         toValue: 0,
@@ -648,10 +678,10 @@ export default function RiderDashboardScreen() {
                     </View>
                     <View style={tw`flex-1`}>
                       <Text style={tw`text-xs font-bold text-slate-900`} numberOfLines={1}>
-                        {item.pickupAddress} â†’ {item.dropoffAddress}
+                        {item?.pickupAddress || 'Trip'} → {item?.dropoffAddress || 'Destination'}
                       </Text>
                       <Text style={tw`text-[10px] text-slate-400 mt-0.5`}>
-                        {item.orderNumber} â€¢ {item.dateGroup || 'Today'}
+                        {item?.orderNumber || 'ORD'} • {item?.dateGroup || 'Today'}
                       </Text>
                     </View>
                   </View>
@@ -667,9 +697,11 @@ export default function RiderDashboardScreen() {
           </View>
         </ScrollView>
 
-        {/* â”€â”€ BOTTOM NAV â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* ─── BOTTOM NAV ──────────────────────── */}
         <BottomNav active="dashboard" />
       </View>
+
+      <NotificationSoundPlayer soundTrigger={soundTrigger} />
     </SafeAreaView>
   );
 }
