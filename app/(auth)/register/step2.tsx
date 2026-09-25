@@ -119,7 +119,7 @@ export default function RegisterStep2Screen() {
           )}
 
           {/* Your Information Card */}
-          <View style={tw`bg-white rounded-3xl p-5 border border-slate-200 shadow-xs mb-6 gap-4`}>
+          <View style={tw`bg-white rounded-3xl p-5 border border-slate-200 shadow-sm mb-6 gap-4`}>
             <View style={tw`flex-row items-center gap-3 border-b border-slate-100 pb-3`}>
               <View style={tw`w-9 h-9 rounded-xl bg-blue-50 items-center justify-center`}>
                 <Ionicons name="location-outline" size={20} color="#0B1044" />

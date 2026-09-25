@@ -298,7 +298,7 @@ export default function RegisterStep3Screen() {
           <View style={tw`gap-3 mb-5`}>
             <View>
               <Text style={tw`text-xs font-bold text-slate-700 mb-1`}>Vehicle Model</Text>
-              <View style={tw`bg-white border border-slate-300 rounded-2xl p-3.5 shadow-xs`}>
+              <View style={tw`bg-white border border-slate-300 rounded-2xl p-3.5 shadow-sm`}>
                 <TextInput
                   value={vehicleModel}
                   onChangeText={setVehicleModel}
@@ -311,7 +311,7 @@ export default function RegisterStep3Screen() {
 
             <View>
               <Text style={tw`text-xs font-bold text-slate-700 mb-1`}>Vehicle Plate Number *</Text>
-              <View style={tw`bg-white border border-slate-300 rounded-2xl p-3.5 shadow-xs`}>
+              <View style={tw`bg-white border border-slate-300 rounded-2xl p-3.5 shadow-sm`}>
                 <TextInput
                   value={plateNumber}
                   onChangeText={(t) => { setPlateNumber(t); if (error) setError(null); }}
@@ -341,7 +341,7 @@ export default function RegisterStep3Screen() {
               <ActivityIndicator size="small" color="#0B1044" />
             ) : (
               <>
-                <View style={tw`w-10 h-10 rounded-full bg-[#0B1044] items-center justify-center shadow-xs`}>
+                <View style={tw`w-10 h-10 rounded-full bg-[#0B1044] items-center justify-center shadow-sm`}>
                   <Ionicons name="camera-outline" size={20} color="#FFFFFF" />
                 </View>
                 <Text style={tw`text-xs font-black text-slate-900 mt-2`}>Vehicle Photo</Text>
@@ -369,7 +369,7 @@ export default function RegisterStep3Screen() {
               <ActivityIndicator size="small" color="#D97706" />
             ) : (
               <>
-                <View style={tw`w-10 h-10 rounded-full bg-amber-400 items-center justify-center shadow-xs`}>
+                <View style={tw`w-10 h-10 rounded-full bg-amber-400 items-center justify-center shadow-sm`}>
                   <Ionicons name="document-text-outline" size={20} color="#0B1044" />
                 </View>
                 <Text style={tw`text-xs font-black text-slate-900 mt-2`}>Vehicle Registration Document</Text>

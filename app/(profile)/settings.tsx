@@ -43,7 +43,7 @@ export default function SettingsScreen() {
           <Text style={tw`text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-2.5 px-1`}>
             APP LANGUAGE
           </Text>
-          <View style={tw`bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs mb-6`}>
+          <View style={tw`bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm mb-6`}>
             {/* English */}
             <TouchableOpacity
               activeOpacity={0.7}
@@ -106,7 +106,7 @@ export default function SettingsScreen() {
           <Text style={tw`text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-2.5 px-1`}>
             NOTIFICATIONS
           </Text>
-          <View style={tw`bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs mb-6`}>
+          <View style={tw`bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm mb-6`}>
             {/* Delivery Requests */}
             <View style={tw`p-4 flex-row items-center justify-between border-b border-slate-100`}>
               <View style={tw`flex-1 pr-3`}>
@@ -154,7 +154,7 @@ export default function SettingsScreen() {
           <Text style={tw`text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-2.5 px-1`}>
             ACCOUNT
           </Text>
-          <View style={tw`bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs mb-6`}>
+          <View style={tw`bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm mb-6`}>
             {/* Change Password */}
             <TouchableOpacity
               activeOpacity={0.7}

@@ -178,7 +178,7 @@ export default function LiveBiddingScreen() {
             <Text style={tw`text-sm font-extrabold text-slate-900`}>Hire Details</Text>
           </View>
 
-          <View style={tw`w-full h-44 rounded-2xl overflow-hidden mb-4 border border-slate-200 shadow-xs`}>
+          <View style={tw`w-full h-44 rounded-2xl overflow-hidden mb-4 border border-slate-200 shadow-sm`}>
             <InteractiveMap
               height={176}
               center={{ latitude: 6.9271, longitude: 79.8612 }}

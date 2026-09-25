@@ -135,7 +135,7 @@ export default function IncomingRequestScreen() {
           </View>
 
           {/* Accept Timer Box */}
-          <View style={tw`bg-white rounded-2xl p-4 border border-slate-200 flex-row items-center justify-between mb-3 shadow-xs`}>
+          <View style={tw`bg-white rounded-2xl p-4 border border-slate-200 flex-row items-center justify-between mb-3 shadow-sm`}>
             <View style={tw`flex-row items-center gap-3`}>
               <View style={tw`w-10 h-10 rounded-full bg-amber-100 items-center justify-center`}>
                 <Ionicons name="timer-outline" size={22} color="#D97706" />

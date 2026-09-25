@@ -40,7 +40,7 @@ export default function HelpSupportScreen() {
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={() => Alert.alert('Chat Support', 'Connecting to Yaalu live support...')}
-            style={tw`flex-1 bg-white rounded-3xl p-4 border border-slate-200 shadow-xs items-center justify-center py-6`}>
+            style={tw`flex-1 bg-white rounded-3xl p-4 border border-slate-200 shadow-sm items-center justify-center py-6`}>
             <View style={tw`w-12 h-12 rounded-2xl bg-blue-600 items-center justify-center mb-3 shadow-md shadow-blue-200`}>
               <Ionicons name="chatbubble-ellipses" size={22} color="#FFFFFF" />
             </View>
@@ -52,7 +52,7 @@ export default function HelpSupportScreen() {
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={() => Alert.alert('Call Support', 'Calling 011-2345678...')}
-            style={tw`flex-1 bg-white rounded-3xl p-4 border border-slate-200 shadow-xs items-center justify-center py-6`}>
+            style={tw`flex-1 bg-white rounded-3xl p-4 border border-slate-200 shadow-sm items-center justify-center py-6`}>
             <View style={tw`w-12 h-12 rounded-2xl border-2 border-blue-600 items-center justify-center mb-3 bg-blue-50/50`}>
               <Ionicons name="call" size={20} color="#2563EB" />
             </View>
@@ -62,7 +62,7 @@ export default function HelpSupportScreen() {
         </View>
 
         {/* Search Bar */}
-        <View style={tw`bg-[#F1F5F9]/80 border border-slate-200 rounded-2xl px-4 py-3 flex-row items-center gap-2.5 mb-5 shadow-xs`}>
+        <View style={tw`bg-[#F1F5F9]/80 border border-slate-200 rounded-2xl px-4 py-3 flex-row items-center gap-2.5 mb-5 shadow-sm`}>
           <Ionicons name="search" size={18} color="#64748B" />
           <TextInput
             value={searchQuery}
@@ -74,7 +74,7 @@ export default function HelpSupportScreen() {
         </View>
 
         {/* Category List Box */}
-        <View style={tw`bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs mb-6`}>
+        <View style={tw`bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm mb-6`}>
           {/* Delivery Issues */}
           <TouchableOpacity
             activeOpacity={0.7}
@@ -130,7 +130,7 @@ export default function HelpSupportScreen() {
           {/* Card 1 */}
           <TouchableOpacity
             activeOpacity={0.8}
-            style={tw`w-56 bg-white rounded-3xl border border-slate-200 overflow-hidden mr-3.5 shadow-xs`}>
+            style={tw`w-56 bg-white rounded-3xl border border-slate-200 overflow-hidden mr-3.5 shadow-sm`}>
             <Image
               source={{ uri: 'https://images.unsplash.com/photo-1526367790999-0150786686a2?q=80&w=400' }}
               style={tw`w-full h-28`}
@@ -150,7 +150,7 @@ export default function HelpSupportScreen() {
           {/* Card 2 */}
           <TouchableOpacity
             activeOpacity={0.8}
-            style={tw`w-56 bg-white rounded-3xl border border-slate-200 overflow-hidden mr-3.5 shadow-xs`}>
+            style={tw`w-56 bg-white rounded-3xl border border-slate-200 overflow-hidden mr-3.5 shadow-sm`}>
             <Image
               source={{ uri: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=400' }}
               style={tw`w-full h-28`}

@@ -144,7 +144,7 @@ export default function DrivingLicenseScreen() {
         {/* Front Side Section */}
         <Text style={tw`text-xs font-bold text-slate-700 mb-2`}>Front Side</Text>
         {frontUri && (
-          <View style={tw`bg-white rounded-3xl p-3 border border-slate-200 shadow-xs mb-3 relative`}>
+          <View style={tw`bg-white rounded-3xl p-3 border border-slate-200 shadow-sm mb-3 relative`}>
             <Image
               source={{ uri: frontUri }}
               style={tw`w-full h-40 rounded-2xl bg-slate-100`}
@@ -174,7 +174,7 @@ export default function DrivingLicenseScreen() {
         {/* Back Side Section */}
         <Text style={tw`text-xs font-bold text-slate-700 mb-2`}>Back Side</Text>
         {backUri && (
-          <View style={tw`bg-white rounded-3xl p-3 border border-slate-200 shadow-xs mb-3 relative`}>
+          <View style={tw`bg-white rounded-3xl p-3 border border-slate-200 shadow-sm mb-3 relative`}>
             <Image
               source={{ uri: backUri }}
               style={tw`w-full h-40 rounded-2xl bg-slate-100`}

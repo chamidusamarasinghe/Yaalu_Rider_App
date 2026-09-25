@@ -106,7 +106,7 @@ export default function HireDetailsScreen() {
 
         {/* Map & Location Card */}
         <View style={tw`bg-white rounded-3xl p-4 mb-4 border border-slate-200 shadow-sm`}>
-          <View style={tw`w-full h-44 rounded-2xl overflow-hidden mb-4 border border-slate-200 shadow-xs`}>
+          <View style={tw`w-full h-44 rounded-2xl overflow-hidden mb-4 border border-slate-200 shadow-sm`}>
             <InteractiveMap
               height={176}
               center={{ latitude: 6.9271, longitude: 79.8612 }}

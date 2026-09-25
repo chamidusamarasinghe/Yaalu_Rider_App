@@ -74,7 +74,7 @@ export default function OrdersScreen() {
               key={tab}
               onPress={() => setFilter(tab)}
               style={[
-                tw`px-3.5 py-1.5 rounded-full border shadow-xs`,
+                tw`px-3.5 py-1.5 rounded-full border shadow-sm`,
                 filter === tab
                   ? tw`bg-[#0B1044] border-[#0B1044]`
                   : tw`bg-slate-100 border-slate-200`,

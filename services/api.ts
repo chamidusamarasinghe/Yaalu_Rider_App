@@ -124,9 +124,13 @@ export function formatRiderData(res: any, currentSaved?: any): any {
   const getVal = (...keys: string[]): string => {
     for (const key of keys) {
       if (r && r[key] !== undefined && r[key] !== null && r[key] !== '') return String(r[key]);
+      if (r?.vehicle && r.vehicle[key] !== undefined && r.vehicle[key] !== null && r.vehicle[key] !== '') return String(r.vehicle[key]);
       if (u && u[key] !== undefined && u[key] !== null && u[key] !== '') return String(u[key]);
+      if (u?.vehicle && u.vehicle[key] !== undefined && u.vehicle[key] !== null && u.vehicle[key] !== '') return String(u.vehicle[key]);
       if (res && res[key] !== undefined && res[key] !== null && res[key] !== '') return String(res[key]);
+      if (res?.vehicle && res.vehicle[key] !== undefined && res.vehicle[key] !== null && res.vehicle[key] !== '') return String(res.vehicle[key]);
       if (currentSaved && currentSaved[key] !== undefined && currentSaved[key] !== null && currentSaved[key] !== '') return String(currentSaved[key]);
+      if (currentSaved?.vehicle && currentSaved.vehicle[key] !== undefined && currentSaved.vehicle[key] !== null && currentSaved.vehicle[key] !== '') return String(currentSaved.vehicle[key]);
     }
     return '';
   };
@@ -151,8 +155,8 @@ export function formatRiderData(res: any, currentSaved?: any): any {
 
   // Images & Documents (Cloudinary URLs or local URIs)
   const profilePhotoUrl = getVal('profilePhotoUrl', 'profilePicture', 'profilePhoto', 'profilePic', 'avatar');
-  const vehiclePhoto = getVal('vehiclePhoto', 'vehiclePhotoUrl', 'vehicleImage', 'photoUrl');
-  const registrationDoc = getVal('registrationDoc', 'registrationDocUrl', 'vehicleRegistration', 'registrationDocUri');
+  const vehiclePhoto = getVal('vehiclePhoto', 'vehiclePhotoUrl', 'vehicleImage', 'photoUrl', 'photo', 'vehiclePicture', 'vehiclePhotoUri', 'vehicleFrontPhoto', 'vehicleFrontUrl');
+  const registrationDoc = getVal('registrationDoc', 'registrationDocUrl', 'vehicleRegistration', 'registrationDocUri', 'registrationDocPhoto', 'vehicleDoc', 'docUrl', 'registrationCertificate', 'revenueLicense');
   const licenseFrontUrl = getVal('licenseFrontUrl', 'licenseFrontPhoto');
   const licenseBackUrl = getVal('licenseBackUrl', 'licenseBackPhoto');
   const policeClearanceDoc = getVal('policeClearanceDoc');
@@ -312,36 +316,8 @@ export const riderApi = {
         const u = res.user || {};
         const r = res.rider || res.riderProfile || {};
 
-        const mergedRider = {
-          ...res,
-          ...u,
-          ...r,
-          id: r.id || u.id || res.id,
-          userId: u.id || r.userId || res.id,
-          firstName: u.firstName || (u.fullName ? u.fullName.split(' ')[0] : '') || 'Rider',
-          lastName: u.lastName || '',
-          fullName: r.fullName || u.fullName || `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Rider Partner',
-          phoneNumber: r.phoneNumber || u.phoneNumber || '',
-          phone: r.phoneNumber || u.phoneNumber || '',
-          email: u.email || r.email || '',
-          profilePhotoUrl: r.profilePhotoUrl || u.profilePicture || r.profilePicture || '',
-          profilePicture: r.profilePhotoUrl || u.profilePicture || r.profilePicture || '',
-          nicNumber: r.nicNumber || u.nicNumber || '',
-          address: r.address || u.address || '',
-          city: r.city || u.city || '',
-          vehicleType: r.vehicleType || u.vehicleType || 'MOTORBIKE',
-          vehicleModel: r.vehicleModel || u.vehicleModel || '',
-          vehicleNumber: r.vehicleNumber || u.plateNumber || '',
-          plateNumber: r.vehicleNumber || u.plateNumber || '',
-          licenseNumber: r.licenseNumber || u.licenseNumber || '',
-          bankName: r.bankName || u.bankName || '',
-          accountHolder: r.accountName || u.accountHolder || u.fullName || '',
-          accountName: r.accountName || u.accountHolder || u.fullName || '',
-          accountNumber: r.accountNo || u.accountNumber || '',
-          accountNo: r.accountNo || u.accountNumber || '',
-          branchCode: r.accountBranch || u.branchCode || '',
-          accountBranch: r.accountBranch || u.branchCode || '',
-        };
+        const currentSaved = await getSavedRider();
+        const mergedRider = formatRiderData(res, { ...currentSaved, ...res, ...u, ...r });
         await saveRider(mergedRider);
       }
       return res;

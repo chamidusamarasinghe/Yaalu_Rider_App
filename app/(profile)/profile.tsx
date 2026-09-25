@@ -148,7 +148,7 @@ export default function ProfileScreen() {
           {/* Stats Grid */}
           <View style={tw`flex-row gap-3 w-full my-6`}>
             <View style={tw`flex-1 bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 flex-row items-center gap-3`}>
-              <View style={tw`w-10 h-10 rounded-xl bg-amber-500 items-center justify-center shadow-xs`}>
+              <View style={tw`w-10 h-10 rounded-xl bg-amber-500 items-center justify-center shadow-sm`}>
                 <Ionicons name="cash" size={20} color="#FFFFFF" />
               </View>
               <View>
@@ -158,7 +158,7 @@ export default function ProfileScreen() {
             </View>
 
             <View style={tw`flex-1 bg-blue-500/10 border border-blue-500/20 rounded-2xl p-4 flex-row items-center gap-3`}>
-              <View style={tw`w-10 h-10 rounded-xl bg-[#0B1044] items-center justify-center shadow-xs`}>
+              <View style={tw`w-10 h-10 rounded-xl bg-[#0B1044] items-center justify-center shadow-sm`}>
                 <Ionicons name="checkmark-circle" size={20} color="#FFC72C" />
               </View>
               <View>
@@ -174,7 +174,7 @@ export default function ProfileScreen() {
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => router.push('/personal-details' as any)}
-              style={tw`w-full bg-white rounded-2xl p-4 flex-row items-center justify-between border border-slate-200 shadow-xs`}>
+              style={tw`w-full bg-white rounded-2xl p-4 flex-row items-center justify-between border border-slate-200 shadow-sm`}>
               <View style={tw`flex-row items-center gap-3.5`}>
                 <View style={tw`w-9 h-9 rounded-xl bg-[#0B1044] items-center justify-center`}>
                   <Ionicons name="person" size={18} color="#FFFFFF" />
@@ -188,7 +188,7 @@ export default function ProfileScreen() {
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => router.push('/vehicle-details' as any)}
-              style={tw`w-full bg-white rounded-2xl p-4 flex-row items-center justify-between border border-slate-200 shadow-xs`}>
+              style={tw`w-full bg-white rounded-2xl p-4 flex-row items-center justify-between border border-slate-200 shadow-sm`}>
               <View style={tw`flex-row items-center gap-3.5`}>
                 <View style={tw`w-9 h-9 rounded-xl bg-[#0B1044] items-center justify-center`}>
                   <Ionicons name="car-sport" size={18} color="#FFFFFF" />
@@ -202,7 +202,7 @@ export default function ProfileScreen() {
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => router.push('/bank-details' as any)}
-              style={tw`w-full bg-white rounded-2xl p-4 flex-row items-center justify-between border border-slate-200 shadow-xs`}>
+              style={tw`w-full bg-white rounded-2xl p-4 flex-row items-center justify-between border border-slate-200 shadow-sm`}>
               <View style={tw`flex-row items-center gap-3.5`}>
                 <View style={tw`w-9 h-9 rounded-xl bg-[#0B1044] items-center justify-center`}>
                   <Ionicons name="business" size={18} color="#FFFFFF" />
@@ -216,7 +216,7 @@ export default function ProfileScreen() {
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => router.push('/help-support' as any)}
-              style={tw`w-full bg-white rounded-2xl p-4 flex-row items-center justify-between border border-slate-200 shadow-xs`}>
+              style={tw`w-full bg-white rounded-2xl p-4 flex-row items-center justify-between border border-slate-200 shadow-sm`}>
               <View style={tw`flex-row items-center gap-3.5`}>
                 <View style={tw`w-9 h-9 rounded-xl bg-[#0B1044] items-center justify-center`}>
                   <Ionicons name="document-text" size={18} color="#FFFFFF" />
@@ -230,7 +230,7 @@ export default function ProfileScreen() {
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => router.push('/settings' as any)}
-              style={tw`w-full bg-white rounded-2xl p-4 flex-row items-center justify-between border border-slate-200 shadow-xs`}>
+              style={tw`w-full bg-white rounded-2xl p-4 flex-row items-center justify-between border border-slate-200 shadow-sm`}>
               <View style={tw`flex-row items-center gap-3.5`}>
                 <View style={tw`w-9 h-9 rounded-xl bg-[#0B1044] items-center justify-center`}>
                   <Ionicons name="settings" size={18} color="#FFFFFF" />
@@ -244,7 +244,7 @@ export default function ProfileScreen() {
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={handleLogout}
-              style={tw`w-full bg-red-50 rounded-2xl p-4 flex-row items-center justify-between border border-red-100 shadow-xs`}>
+              style={tw`w-full bg-red-50 rounded-2xl p-4 flex-row items-center justify-between border border-red-100 shadow-sm`}>
               <View style={tw`flex-row items-center gap-3.5`}>
                 <View style={tw`w-9 h-9 rounded-xl bg-red-500 items-center justify-center`}>
                   <Ionicons name="log-out" size={18} color="#FFFFFF" />

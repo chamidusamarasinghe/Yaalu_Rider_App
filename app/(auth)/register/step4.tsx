@@ -231,7 +231,7 @@ export default function RegisterStep4Screen() {
           {/* Form Inputs */}
           <View style={tw`gap-4 mb-6`}>
             {/* License Number Input */}
-            <View style={tw`bg-white border border-slate-300 rounded-2xl px-4 py-3.5 shadow-xs`}>
+            <View style={tw`bg-white border border-slate-300 rounded-2xl px-4 py-3.5 shadow-sm`}>
               <Text style={tw`text-[11px] font-bold text-[#0B1044] mb-1`}>Driving License Number *</Text>
               <TextInput
                 value={licenseNumber}
@@ -244,7 +244,7 @@ export default function RegisterStep4Screen() {
             </View>
 
             {/* Expiry Date Input with Auto Hyphenation YYYY-MM-DD */}
-            <View style={tw`bg-white border border-slate-300 rounded-2xl px-4 py-3.5 shadow-xs`}>
+            <View style={tw`bg-white border border-slate-300 rounded-2xl px-4 py-3.5 shadow-sm`}>
               <Text style={tw`text-[11px] font-bold text-[#0B1044] mb-1`}>License Expiry Date (YYYY-MM-DD) *</Text>
               <TextInput
                 value={formattedExpiryDate}
@@ -275,7 +275,7 @@ export default function RegisterStep4Screen() {
               disabled={isUploadingFront}
               style={tw`flex-1 h-44 border ${
                 licenseFrontPhoto ? 'bg-emerald-50 border-emerald-500' : 'bg-white border-dashed border-indigo-300'
-              } rounded-3xl p-2 items-center justify-center shadow-xs relative overflow-hidden`}>
+              } rounded-3xl p-2 items-center justify-center shadow-sm relative overflow-hidden`}>
               {licenseFrontPhoto ? (
                 <Image source={{ uri: licenseFrontPhoto }} style={tw`w-full h-full rounded-2xl`} resizeMode="cover" />
               ) : isUploadingFront ? (
@@ -295,7 +295,7 @@ export default function RegisterStep4Screen() {
               disabled={isUploadingBack}
               style={tw`flex-1 h-44 border ${
                 licenseBackPhoto ? 'bg-emerald-50 border-emerald-500' : 'bg-white border-dashed border-indigo-300'
-              } rounded-3xl p-2 items-center justify-center shadow-xs relative overflow-hidden`}>
+              } rounded-3xl p-2 items-center justify-center shadow-sm relative overflow-hidden`}>
               {licenseBackPhoto ? (
                 <Image source={{ uri: licenseBackPhoto }} style={tw`w-full h-full rounded-2xl`} resizeMode="cover" />
               ) : isUploadingBack ? (
@@ -319,7 +319,7 @@ export default function RegisterStep4Screen() {
             disabled={isUploadingPolice}
             style={tw`border ${
               policeClearanceDoc ? 'bg-emerald-50 border-emerald-500' : 'bg-white border-dashed border-slate-300'
-            } rounded-2xl p-4 flex-row items-center justify-between mb-8 shadow-xs`}>
+            } rounded-2xl p-4 flex-row items-center justify-between mb-8 shadow-sm`}>
             <View style={tw`flex-row items-center gap-3`}>
               <Ionicons name="document-attach-outline" size={24} color="#0B1044" />
               <View>

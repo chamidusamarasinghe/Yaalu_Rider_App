@@ -222,7 +222,7 @@ export default function VerifyOTPScreen() {
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => autoFillOtp(activeOtp)}
-              style={tw`bg-indigo-50 border border-indigo-200 rounded-2xl p-3.5 mb-4 flex-row items-center justify-between shadow-xs`}>
+              style={tw`bg-indigo-50 border border-indigo-200 rounded-2xl p-3.5 mb-4 flex-row items-center justify-between shadow-sm`}>
               <View style={tw`flex-row items-center gap-2.5`}>
                 <View style={tw`w-8 h-8 rounded-full bg-[#0B1044] items-center justify-center`}>
                   <Ionicons name="chatbox-ellipses-outline" size={18} color="#FFC72C" />
@@ -253,7 +253,7 @@ export default function VerifyOTPScreen() {
                 key={idx}
                 ref={(ref) => { inputRefs.current[idx] = ref; }}
                 style={[
-                  tw`w-12 h-13 rounded-xl border-2 text-center text-xl font-black shadow-xs`,
+                  tw`w-12 h-13 rounded-xl border-2 text-center text-xl font-black shadow-sm`,
                   digit
                     ? tw`border-[#0B1044] bg-indigo-50/50 text-[#0B1044]`
                     : tw`border-slate-200 bg-white text-slate-900`,
