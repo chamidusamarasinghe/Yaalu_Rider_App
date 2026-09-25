@@ -134,7 +134,7 @@ export default function LoginScreen() {
             </View>
           </View>
           <Image
-            source={require('../assets/images/yaalu-wordmark.png')}
+            source={require('../../assets/images/yaalu-wordmark.png')}
             style={tw`w-32 h-8`}
             resizeMode="contain"
           />

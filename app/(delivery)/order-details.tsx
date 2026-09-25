@@ -32,7 +32,7 @@ export default function OrderDetailsScreen() {
 
         {/* YAALU Wordmark */}
         <Image
-          source={require('../assets/images/yaalu-wordmark.png')}
+          source={require('../../assets/images/yaalu-wordmark.png')}
           style={tw`w-32 h-8`}
           resizeMode="contain"
         />
