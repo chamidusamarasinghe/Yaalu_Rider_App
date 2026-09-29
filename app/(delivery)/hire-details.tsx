@@ -4,6 +4,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, Feather, FontAwesome5 } from '@expo/vector-icons';
 import tw from '@/lib/tw';
+import BottomNav from '@/components/BottomNav';
 
 import InteractiveMap from '@/components/InteractiveMap';
 
@@ -82,7 +83,7 @@ export default function HireDetailsScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={tw`p-4 pb-28`} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={tw`p-4 pb-52`} showsVerticalScrollIndicator={false}>
         {/* Status Card */}
         <View style={tw`bg-amber-50 border border-amber-200 rounded-3xl p-4 flex-row items-center justify-between mb-4 shadow-sm`}>
           <View style={tw`flex-row items-center flex-1`}>
@@ -231,7 +232,7 @@ export default function HireDetailsScreen() {
       </ScrollView>
 
       {/* Fixed Bottom Actions */}
-      <View style={tw`absolute bottom-0 left-0 right-0 p-4 bg-white border-t border-slate-100 shadow-md`}>
+      <View style={tw`absolute bottom-16 left-0 right-0 p-4 bg-white border-t border-slate-100 shadow-md z-40`}>
         <TouchableOpacity 
           onPress={handleJoinBid}
           disabled={secondsLeft <= 0}
@@ -251,6 +252,8 @@ export default function HireDetailsScreen() {
           <Text style={tw`font-bold text-slate-700`}>Cancel</Text>
         </TouchableOpacity>
       </View>
+
+      <BottomNav active="dashboard" />
     </SafeAreaView>
   );
 }

@@ -9,9 +9,9 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons, Feather, FontAwesome5 } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import tw from '@/lib/tw';
 import InteractiveMap from '@/components/InteractiveMap';
+import BottomNav from '@/components/BottomNav';
 
 export default function LiveNavigationScreen() {
   const router = useRouter();
@@ -20,7 +20,7 @@ export default function LiveNavigationScreen() {
     <SafeAreaView style={tw`flex-1 bg-[#FFC72C]`} edges={['top', 'bottom']}>
       <RNStatusBar barStyle="dark-content" backgroundColor="#FFC72C" />
 
-      <View style={tw`flex-1 bg-white`}>
+      <View style={tw`flex-1 bg-white relative`}>
 
       {/* Top Header Bar */}
       <View style={tw`bg-[#FFC72C] h-14 px-4 flex-row items-center justify-between shadow-sm`}>
@@ -165,33 +165,7 @@ export default function LiveNavigationScreen() {
 
       </ScrollView>
 
-      {/* Bottom Navigation Bar */}
-      <View style={tw`absolute bottom-0 left-0 right-0 h-16 bg-[#FFC72C] flex-row items-center justify-around border-t border-amber-300 shadow-lg px-2`}>
-        <TouchableOpacity onPress={() => router.push('/dashboard')} style={tw`items-center`}>
-          <Ionicons name="home-outline" size={20} color="#0B1044" />
-          <Text style={tw`text-[10px] font-bold text-[#0B1044]`}>Home</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={() => router.push('/orders' as any)} style={tw`items-center`}>
-          <Ionicons name="cart-outline" size={20} color="#0B1044" />
-          <Text style={tw`text-[10px] font-bold text-[#0B1044]`}>Orders</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={() => router.push('/wallet' as any)} style={tw`items-center`}>
-          <Ionicons name="wallet-outline" size={20} color="#0B1044" />
-          <Text style={tw`text-[10px] font-bold text-[#0B1044]`}>Wallet</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={() => router.push('/notifications' as any)} style={tw`items-center`}>
-          <Ionicons name="notifications-outline" size={20} color="#0B1044" />
-          <Text style={tw`text-[10px] font-bold text-[#0B1044]`}>Notification</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={() => router.push('/profile' as any)} style={tw`items-center`}>
-          <Ionicons name="person-outline" size={20} color="#0B1044" />
-          <Text style={tw`text-[10px] font-bold text-[#0B1044]`}>Profile</Text>
-        </TouchableOpacity>
-      </View>
+      <BottomNav active="dashboard" />
       </View>
     </SafeAreaView>
   );

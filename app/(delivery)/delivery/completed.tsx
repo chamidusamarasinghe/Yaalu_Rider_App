@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   Text,
   View,
@@ -10,15 +10,23 @@ import { useRouter } from 'expo-router';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tw from '@/lib/tw';
+import riderApi, { safeStorage } from '@/services/api';
+import BottomNav from '@/components/BottomNav';
 
 export default function DeliveryCompletedScreen() {
   const router = useRouter();
+
+  useEffect(() => {
+    // Finish ride / reset active trip state when delivery is completed
+    safeStorage.removeItem('active_ongoing_ride').catch(() => {});
+    riderApi.setStatus('AVAILABLE').catch(() => {});
+  }, []);
 
   return (
     <SafeAreaView style={tw`flex-1 bg-[#FFC72C]`} edges={['top', 'bottom']}>
       <RNStatusBar barStyle="dark-content" backgroundColor="#FFC72C" />
 
-      <View style={tw`flex-1 bg-[#F8FAFC]`}>
+      <View style={tw`flex-1 bg-[#F8FAFC] relative`}>
 
       {/* Header Bar */}
       <View style={tw`bg-[#FFC72C] h-14 px-4 flex-row items-center justify-between shadow-sm`}>
@@ -29,7 +37,7 @@ export default function DeliveryCompletedScreen() {
         <View style={tw`w-6`} />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={tw`p-4 pb-10`}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={tw`p-4 pb-24`}>
         {/* Main Content Card */}
         <View style={tw`bg-white rounded-3xl p-6 shadow-sm border border-slate-100 items-center`}>
           {/* Confetti + Green Checkmark Circle */}
@@ -133,6 +141,8 @@ export default function DeliveryCompletedScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <BottomNav active="dashboard" />
       </View>
     </SafeAreaView>
   );

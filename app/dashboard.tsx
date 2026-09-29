@@ -18,12 +18,13 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tw from '@/lib/tw';
-import riderApi, { getSavedRider, formatRiderData } from '@/services/api';
+import riderApi, { getSavedRider, formatRiderData, safeStorage } from '@/services/api';
 import InteractiveMap from '@/components/InteractiveMap';
 import { checkAndGetRiderLocation, LocationCoords } from '@/lib/location';
 import { useHireNotification } from '@/hooks/useHireNotification';
 import { markNotificationsAsViewed } from '@/lib/notificationsStorage';
 import { WebView } from 'react-native-webview';
+import BottomNav from '@/components/BottomNav';
 
 function NotificationSoundPlayer({ soundTrigger }: { soundTrigger: number }) {
   if (!soundTrigger) return null;
@@ -58,45 +59,6 @@ function NotificationSoundPlayer({ soundTrigger }: { soundTrigger: number }) {
 
 const { width: W } = Dimensions.get('window');
 
-
-/* â”€â”€â”€ BOTTOM NAV â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-function BottomNav({ active }: { active: string }) {
-  const router = useRouter();
-  const tabs = [
-    { key: 'dashboard', icon: 'home', label: 'Home', route: '/dashboard' },
-    { key: 'orders', icon: 'receipt-outline', label: 'Orders', route: '/orders' },
-    { key: 'wallet', icon: 'wallet-outline', label: 'Wallet', route: '/wallet' },
-    { key: 'notifications', icon: 'notifications-outline', label: 'Alerts', route: '/notifications' },
-    { key: 'profile', icon: 'person-outline', label: 'Profile', route: '/profile' },
-  ] as const;
-
-  return (
-    <View style={tw`absolute bottom-0 left-0 right-0 h-16 bg-[#FFC72C] flex-row items-center justify-around border-t border-amber-300 shadow-lg px-2`}>
-      {tabs.map(t => {
-        const isActive = t.key === active;
-        return (
-          <TouchableOpacity
-            key={t.key}
-            onPress={() => router.push(t.route as any)}
-            style={tw`items-center`}>
-            {isActive ? (
-              <View style={tw`bg-white px-3 py-1 rounded-full flex-row items-center gap-1`}>
-                <Ionicons name="home" size={18} color="#0B1044" />
-                <Text style={tw`text-xs font-extrabold text-[#0B1044]`}>{t.label}</Text>
-              </View>
-            ) : (
-              <View style={tw`items-center`}>
-                <Ionicons name={t.icon as any} size={20} color="#0B1044" />
-                <Text style={tw`text-[10px] font-bold text-[#0B1044]`}>{t.label}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  );
-}
-
 /* â”€â”€â”€ METRIC CARD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function MetricCard({ icon, label, value, iconColor, bgColor }: any) {
   return (
@@ -118,6 +80,7 @@ export default function RiderDashboardScreen() {
   const [earnings, setEarnings] = useState<any>(null);
   const [availableCount, setAvailableCount] = useState(0);
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
+  const [savedActiveTrip, setSavedActiveTrip] = useState<any>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [userLocation, setUserLocation] = useState<LocationCoords>({
     latitude: 6.9271,
@@ -139,13 +102,6 @@ export default function RiderDashboardScreen() {
     refresh: refreshNotifications,
     socketConnected,
   } = useHireNotification(isOnline);
-
-  // Refresh notifications & unread badge count immediately whenever dashboard comes into focus
-  useFocusEffect(
-    useCallback(() => {
-      refreshNotifications();
-    }, [refreshNotifications])
-  );
 
   // Slide in banner & pulse animation when new hire request arrives
   useEffect(() => {
@@ -233,6 +189,17 @@ export default function RiderDashboardScreen() {
         riderApi.getMyOrders(),
       ]);
 
+      const savedRideStr = await safeStorage.getItem('active_ongoing_ride');
+      if (savedRideStr) {
+        try {
+          setSavedActiveTrip(JSON.parse(savedRideStr));
+        } catch {
+          setSavedActiveTrip(null);
+        }
+      } else {
+        setSavedActiveTrip(null);
+      }
+
       if (profileRes.status === 'fulfilled') {
         const p = profileRes.value as any;
         const currentSaved = await getSavedRider();
@@ -247,7 +214,7 @@ export default function RiderDashboardScreen() {
       }
       if (earningsRes.status === 'fulfilled') setEarnings(earningsRes.value);
       if (ordersRes.status === 'fulfilled') setAvailableCount(Array.isArray(ordersRes.value) ? ordersRes.value.length : 0);
-      if (historyRes.status === 'fulfilled') setRecentOrders(Array.isArray(historyRes.value) ? historyRes.value.slice(0, 4) : []);
+      if (historyRes.status === 'fulfilled') setRecentOrders(Array.isArray(historyRes.value) ? historyRes.value : []);
     } catch (e) {
       console.warn('Dashboard load error:', e);
     }
@@ -257,6 +224,14 @@ export default function RiderDashboardScreen() {
     loadData();
     fetchAndSetLocation(true);
   }, [loadData, fetchAndSetLocation]);
+
+  // Refresh dashboard data, notifications & unread badge count immediately whenever dashboard comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+      refreshNotifications();
+    }, [loadData, refreshNotifications])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -471,6 +446,63 @@ export default function RiderDashboardScreen() {
           contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: 110 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFC72C" />}
         >
+          {/* ── ACTIVE ONGOING TRIP BANNER ── */}
+          {(() => {
+            const activeTrip = savedActiveTrip || recentOrders.find((o) =>
+              ['ACCEPTED', 'IN_TRIP', 'VERIFIED_START', 'PICKED_UP', 'ARRIVED', 'PENDING', 'BID_ACCEPTED', 'IN_PROGRESS', 'ASSIGNED', 'RIDER_ACCEPTED'].includes(
+                (o.status || '').toUpperCase()
+              )
+            );
+
+            if (!activeTrip) return null;
+
+            return (
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={() => {
+                  router.push({
+                    pathname: '/(delivery)/navigate-pickup' as any,
+                    params: {
+                      orderId: activeTrip.id,
+                      pickup: activeTrip.pickupAddress,
+                      dropoff: activeTrip.dropoffAddress,
+                      fare: activeTrip.fare,
+                      pickupLat: activeTrip.pickupLat || activeTrip.latitude,
+                      pickupLng: activeTrip.pickupLng || activeTrip.longitude,
+                      dropoffLat: activeTrip.dropoffLat,
+                      dropoffLng: activeTrip.dropoffLng,
+                    },
+                  });
+                }}
+                style={tw`bg-[#0B1044] rounded-2xl p-4 mb-4 border-2 border-emerald-500 shadow-md`}>
+                <View style={tw`flex-row items-center justify-between mb-1.5`}>
+                  <View style={tw`flex-row items-center gap-2`}>
+                    <View style={tw`w-2.5 h-2.5 rounded-full bg-emerald-400`} />
+                    <Text style={tw`text-xs font-black text-emerald-400 uppercase tracking-wide`}>
+                      Active Ongoing Trip
+                    </Text>
+                  </View>
+                  <Text style={tw`text-sm font-black text-[#FFC72C]`}>
+                    {activeTrip.amount || `LKR ${activeTrip.fare || '0.00'}`}
+                  </Text>
+                </View>
+
+                <Text style={tw`text-xs font-extrabold text-white mb-2`} numberOfLines={1}>
+                  {activeTrip.pickupAddress} → {activeTrip.dropoffAddress}
+                </Text>
+
+                <View style={tw`flex-row items-center justify-between pt-2 border-t border-white/10`}>
+                  <Text style={tw`text-[11px] font-bold text-slate-300`}>
+                    {activeTrip.orderNumber} • Status: {activeTrip.status}
+                  </Text>
+                  <View style={tw`bg-[#FFC72C] px-3 py-1.5 rounded-xl flex-row items-center gap-1`}>
+                    <Ionicons name="navigate" size={13} color="#0B1044" />
+                    <Text style={tw`text-[11px] font-black text-[#0B1044]`}>Live Navigation →</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            );
+          })()}
           {/* â”€â”€ LOCATION REQUIRED BANNER (When Offline) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           {!isOnline && (
             <TouchableOpacity
@@ -677,7 +709,7 @@ export default function RiderDashboardScreen() {
           <Text style={tw`text-xs font-black text-slate-500 uppercase tracking-widest mb-3`}>Recent Activity</Text>
           <View style={tw`bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden mb-6`}>
             {recentOrders.length > 0 ? (
-              recentOrders.map((item: any, idx: number) => (
+              recentOrders.slice(0, 4).map((item: any, idx: number) => (
                 <View
                   key={item.id || idx}
                   style={[
