@@ -7,13 +7,16 @@ import {
   StatusBar as RNStatusBar,
   StyleSheet,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, Feather, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import tw from '@/lib/tw';
 
 export default function BidWonScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const winningBid = params.finalFare ? Number(params.finalFare) : (params.bid ? Number(params.bid) : 960);
+  const rideRequestId = params.rideRequestId as string;
 
   return (
     <SafeAreaView style={tw`flex-1 bg-[#FFC72C]`} edges={['top', 'bottom']}>
@@ -39,7 +42,7 @@ export default function BidWonScreen() {
           <Text style={tw`text-xs font-bold text-amber-600 uppercase tracking-widest mb-1`}>
             Winning Bid
           </Text>
-          <Text style={tw`text-4xl font-extrabold text-slate-900 mb-1`}>Rs. 960</Text>
+          <Text style={tw`text-4xl font-extrabold text-slate-900 mb-1`}>Rs. {winningBid.toLocaleString()}</Text>
           <Text style={tw`text-xs font-semibold text-slate-400 mb-3`}>
             Starting Price: Rs. 1,000
           </Text>
@@ -102,7 +105,7 @@ export default function BidWonScreen() {
         {/* Action Buttons */}
         <TouchableOpacity
           activeOpacity={0.85}
-          onPress={() => router.push('/navigate-pickup' as any)}
+          onPress={() => router.push({ pathname: '/navigate-pickup', params: { rideRequestId } } as any)}
           style={tw`bg-[#FFC72C] py-4 rounded-2xl flex-row items-center justify-center shadow-md mb-3`}
         >
           <Ionicons name="navigate" size={18} color="#0B1044" style={tw`mr-2`} />

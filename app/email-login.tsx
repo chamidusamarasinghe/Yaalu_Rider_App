@@ -21,6 +21,7 @@ import riderApi, { saveRegistrationDraft } from '@/services/api';
 
 export default function EmailLoginScreen() {
   const router = useRouter();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);

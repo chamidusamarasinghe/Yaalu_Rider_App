@@ -66,6 +66,7 @@ export default function NewRequestsScreen() {
         router.push({
           pathname: '/hire-details',
           params: {
+            rideRequestId: orderId,
             startingPrice: fare.toString(),
             minBid: Math.floor(fare * 0.9).toString(),
             maxBid: Math.floor(fare * 1.2).toString(),

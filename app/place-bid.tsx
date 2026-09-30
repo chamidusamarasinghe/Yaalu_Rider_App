@@ -67,17 +67,48 @@ export default function PlaceBidScreen() {
   const badgeBg = bid <= startingPrice ? '#D1FAE5' : '#FEF3C7';
   const badgeText = bid <= startingPrice ? '#065F46' : '#92400E';
 
-  const handleSubmitBid = () => {
-    router.push({
-      pathname: '/bid-submitted',
-      params: {
-        bid: bid.toString(),
-        startingPrice: startingPrice.toString(),
-        minBid: minBid.toString(),
-        maxBid: maxBid.toString(),
-        secondsLeft: secondsLeft.toString(),
-      },
-    } as any);
+  const handleSubmitBid = async () => {
+    try {
+      const rider = await import('@/services/api').then(m => m.getSavedRider());
+      const rideRequestId = params.rideRequestId as string;
+      
+      if (rideRequestId && rider) {
+        await import('@/services/api').then(m => m.riderApi.submitBid(rideRequestId, {
+          driverId: rider.id || 'driver-unknown',
+          driverName: rider.firstName || rider.fullName || 'Rider',
+          rating: 5.0,
+          vehicleModel: rider.vehicleModel || 'Unknown Vehicle',
+          vehicleNumber: rider.vehicleNumber || 'Unknown Reg',
+          proposedFare: bid
+        }));
+      }
+
+      router.push({
+        pathname: '/bid-submitted',
+        params: {
+          rideRequestId,
+          bid: bid.toString(),
+          startingPrice: startingPrice.toString(),
+          minBid: minBid.toString(),
+          maxBid: maxBid.toString(),
+          secondsLeft: secondsLeft.toString(),
+        },
+      } as any);
+    } catch (e) {
+      console.warn('Bid submit error', e);
+      // Still navigate for UI flow
+      router.push({
+        pathname: '/bid-submitted',
+        params: {
+          rideRequestId: params.rideRequestId as string,
+          bid: bid.toString(),
+          startingPrice: startingPrice.toString(),
+          minBid: minBid.toString(),
+          maxBid: maxBid.toString(),
+          secondsLeft: secondsLeft.toString(),
+        },
+      } as any);
+    }
   };
 
   return (

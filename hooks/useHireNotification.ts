@@ -14,6 +14,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { getBaseUrl, getToken } from '@/services/api';
 import riderApi from '@/services/api';
+import { calculateDistance, LocationCoords } from '@/lib/location';
 
 export interface HireRequestNotification {
   id: string;
@@ -28,6 +29,8 @@ export interface HireRequestNotification {
     selectedVehicleType?: string;
     finalFare?: number;
     createdAt?: string;
+    pickupLat?: number;
+    pickupLng?: number;
   };
   timestamp: string;
 }
@@ -50,7 +53,7 @@ interface UseHireNotificationReturn {
 // Track seen ride IDs to avoid duplicate notifications
 const seenRideIds = new Set<string>();
 
-export function useHireNotification(isOnline: boolean = true): UseHireNotificationReturn {
+export function useHireNotification(isOnline: boolean = true, userLocation?: LocationCoords | null): UseHireNotificationReturn {
   const [hasNewHireRequest, setHasNewHireRequest] = useState(false);
   const [latestRequest, setLatestRequest] = useState<HireRequestNotification | null>(null);
   const [availableCount, setAvailableCount] = useState(0);
@@ -66,6 +69,22 @@ export function useHireNotification(isOnline: boolean = true): UseHireNotificati
   }, []);
 
   const handleNewRide = useCallback((rideData: any) => {
+    const pickupLat = rideData?.rideRequest?.pickupLat;
+    const pickupLng = rideData?.rideRequest?.pickupLng;
+
+    // Filter out requests that are more than 10km away (DISABLED FOR TESTING)
+    // if (userLocation && pickupLat !== undefined && pickupLng !== undefined) {
+    //   const distance = calculateDistance(
+    //     userLocation.latitude,
+    //     userLocation.longitude,
+    //     pickupLat,
+    //     pickupLng
+    //   );
+    //   if (distance > 1000) { 
+    //     return; 
+    //   }
+    // }
+
     const rideId = rideData?.rideRequest?.id || rideData?.id;
     if (!rideId || seenRideIds.has(rideId)) return;
     seenRideIds.add(rideId);
@@ -82,7 +101,7 @@ export function useHireNotification(isOnline: boolean = true): UseHireNotificati
     setLatestRequest(notification);
     setHasNewHireRequest(true);
     setAvailableCount((prev) => prev + 1);
-  }, []);
+  }, [userLocation]);
 
   // ─── REST Polling Fallback (every 10 seconds) ────────────────
   const pollAvailableRides = useCallback(async () => {

@@ -52,6 +52,7 @@ export default function HireDetailsScreen() {
     router.push({
       pathname: '/live-bidding',
       params: {
+        rideRequestId: params.rideRequestId as string,
         startingPrice: startingPrice.toString(),
         minBid: minBid.toString(),
         maxBid: maxBid.toString(),

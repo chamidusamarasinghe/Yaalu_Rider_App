@@ -8,7 +8,7 @@ import {
   Dimensions,
   Alert,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, Feather, FontAwesome5 } from '@expo/vector-icons';
 import tw from '@/lib/tw';
@@ -21,6 +21,7 @@ const MAP_H = SCREEN_H * 0.52;
 export default function NavigateToPickupScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams();
 
   return (
     <View style={tw`flex-1 bg-white`}>
@@ -107,7 +108,7 @@ export default function NavigateToPickupScreen() {
         {/* Arrived CTA */}
         <TouchableOpacity
           activeOpacity={0.85}
-          onPress={() => router.push('/delivery/step1' as any)}
+          onPress={() => router.push({ pathname: '/delivery/step1', params: { rideRequestId: (params as any).rideRequestId } } as any)}
           style={[tw`bg-[#FFC72C] py-4 rounded-2xl flex-row items-center justify-center mb-3`, {
             shadowColor: '#FFC72C', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 10, elevation: 6,
           }]}
