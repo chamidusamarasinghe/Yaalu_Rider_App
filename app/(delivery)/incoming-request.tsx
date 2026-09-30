@@ -7,19 +7,26 @@ import {
   StatusBar as RNStatusBar,
   Image,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tw from '@/lib/tw';
-
+import { riderApi } from '@/services/api';
 import InteractiveMap from '@/components/InteractiveMap';
 
 export default function IncomingRequestScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
 
-  const handleAccept = () => {
+  const handleAccept = async () => {
+    try {
+      if (params.rideRequestId) {
+        await riderApi.acceptRide(String(params.rideRequestId));
+      }
+    } catch (e) {}
     router.push('/request-accepted');
   };
+
 
   return (
     <SafeAreaView style={tw`flex-1 bg-[#FFC72C]`} edges={['top', 'bottom']}>
