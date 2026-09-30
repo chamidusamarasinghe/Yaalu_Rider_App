@@ -18,6 +18,12 @@
         "backgroundImage": "./assets/images/yaalu-logo.png",
         "monochromeImage": "./assets/images/yaalu-logo.png"
       },
+      "permissions": [
+        "android.permission.VIBRATE",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION"
+      ],
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },

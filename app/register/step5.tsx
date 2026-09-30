@@ -195,7 +195,7 @@ export default function RegisterStep5BankingScreen() {
             {/* Bank Name */}
             <View>
               <Text style={tw`text-xs font-bold text-slate-600 mb-1`}>Bank Name</Text>
-              <View style={tw`flex-row items-center bg-white border border-slate-300 rounded-2xl px-3.5 py-3 shadow-xs gap-2.5`}>
+              <View style={tw`flex-row items-center bg-white border border-slate-300 rounded-2xl px-3.5 py-3 shadow-sm gap-2.5`}>
                 <Ionicons name="business-outline" size={18} color="#64748B" />
                 <TextInput
                   value={bankName}
@@ -210,7 +210,7 @@ export default function RegisterStep5BankingScreen() {
             {/* Account Holder Name */}
             <View>
               <Text style={tw`text-xs font-bold text-slate-600 mb-1`}>Account Holder Name</Text>
-              <View style={tw`flex-row items-center bg-white border border-slate-300 rounded-2xl px-3.5 py-3 shadow-xs gap-2.5`}>
+              <View style={tw`flex-row items-center bg-white border border-slate-300 rounded-2xl px-3.5 py-3 shadow-sm gap-2.5`}>
                 <Ionicons name="person-outline" size={18} color="#64748B" />
                 <TextInput
                   value={accountHolder}
@@ -225,7 +225,7 @@ export default function RegisterStep5BankingScreen() {
             {/* Account Number */}
             <View>
               <Text style={tw`text-xs font-bold text-slate-600 mb-1`}>Account Number</Text>
-              <View style={tw`flex-row items-center bg-white border border-slate-300 rounded-2xl px-3.5 py-3 shadow-xs gap-2.5`}>
+              <View style={tw`flex-row items-center bg-white border border-slate-300 rounded-2xl px-3.5 py-3 shadow-sm gap-2.5`}>
                 <Ionicons name="keypad-outline" size={18} color="#64748B" />
                 <TextInput
                   value={accountNumber}
@@ -241,7 +241,7 @@ export default function RegisterStep5BankingScreen() {
             {/* Branch Code / Routing Number */}
             <View>
               <Text style={tw`text-xs font-bold text-slate-600 mb-1`}>Branch Code / Branch Name</Text>
-              <View style={tw`flex-row items-center bg-white border border-slate-300 rounded-2xl px-3.5 py-3 shadow-xs gap-2.5`}>
+              <View style={tw`flex-row items-center bg-white border border-slate-300 rounded-2xl px-3.5 py-3 shadow-sm gap-2.5`}>
                 <Ionicons name="location-outline" size={18} color="#64748B" />
                 <TextInput
                   value={branchCode}
@@ -261,7 +261,7 @@ export default function RegisterStep5BankingScreen() {
           <View style={tw`gap-3.5 mb-4`}>
             <View>
               <Text style={tw`text-xs font-bold text-slate-600 mb-1`}>Create Password</Text>
-              <View style={tw`flex-row items-center bg-white border border-slate-300 rounded-2xl px-3.5 py-3 shadow-xs gap-2.5`}>
+              <View style={tw`flex-row items-center bg-white border border-slate-300 rounded-2xl px-3.5 py-3 shadow-sm gap-2.5`}>
                 <Ionicons name="lock-closed-outline" size={18} color="#64748B" />
                 <TextInput
                   value={password}
@@ -280,7 +280,7 @@ export default function RegisterStep5BankingScreen() {
 
             <View>
               <Text style={tw`text-xs font-bold text-slate-600 mb-1`}>Confirm Password</Text>
-              <View style={tw`flex-row items-center bg-[#FFFFFF] border border-slate-300 rounded-2xl px-3.5 py-3 shadow-xs gap-2.5`}>
+              <View style={tw`flex-row items-center bg-[#FFFFFF] border border-slate-300 rounded-2xl px-3.5 py-3 shadow-sm gap-2.5`}>
                 <Ionicons name="shield-checkmark-outline" size={18} color="#64748B" />
                 <TextInput
                   value={confirmPassword}
@@ -299,7 +299,7 @@ export default function RegisterStep5BankingScreen() {
           </View>
 
           {/* Password Validation Requirements Checklist */}
-          <View style={tw`bg-white rounded-2xl border border-slate-200 p-4 mb-6 shadow-xs`}>
+          <View style={tw`bg-white rounded-2xl border border-slate-200 p-4 mb-6 shadow-sm`}>
             <Text style={tw`text-xs font-black text-slate-700 mb-2.5`}>Password must contain:</Text>
             
             <View style={tw`gap-2`}>

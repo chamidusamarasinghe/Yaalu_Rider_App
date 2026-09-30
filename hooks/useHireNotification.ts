@@ -12,9 +12,14 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { Vibration } from 'react-native';
 import { getBaseUrl, getToken } from '@/services/api';
 import riderApi from '@/services/api';
 import { calculateDistance, LocationCoords } from '@/lib/location';
+import {
+  getLastViewedNotifTime,
+  getLastClearedNotifTime,
+} from '@/lib/notificationsStorage';
 
 export interface HireRequestNotification {
   id: string;
@@ -42,6 +47,8 @@ interface UseHireNotificationReturn {
   latestRequest: HireRequestNotification | null;
   /** total count of available rides (for badge) */
   availableCount: number;
+  /** timestamp key to trigger audio chime player */
+  soundTrigger: number;
   /** call this to dismiss the notification banner */
   dismissNotification: () => void;
   /** manually trigger a refresh */
@@ -57,6 +64,7 @@ export function useHireNotification(isOnline: boolean = true, userLocation?: Loc
   const [hasNewHireRequest, setHasNewHireRequest] = useState(false);
   const [latestRequest, setLatestRequest] = useState<HireRequestNotification | null>(null);
   const [availableCount, setAvailableCount] = useState(0);
+  const [soundTrigger, setSoundTrigger] = useState(0);
   const [socketConnected, setSocketConnected] = useState(false);
 
   const socketRef = useRef<any>(null);
@@ -85,47 +93,84 @@ export function useHireNotification(isOnline: boolean = true, userLocation?: Loc
     //   }
     // }
 
-    const rideId = rideData?.rideRequest?.id || rideData?.id;
-    if (!rideId || seenRideIds.has(rideId)) return;
-    seenRideIds.add(rideId);
+    const triggerAlert = useCallback(() => {
+      Vibration.vibrate([0, 500, 200, 500, 200, 500]);
+      setSoundTrigger(Date.now());
+    }, []);
 
-    const notification: HireRequestNotification = {
-      id: rideId,
-      type: 'NEW_HIRE_REQUEST',
-      title: rideData?.title || 'New Hire Request! 🚗',
-      body: rideData?.body || `${rideData?.rideRequest?.pickupAddress || ''} → ${rideData?.rideRequest?.dropoffAddress || ''}`,
-      rideRequest: rideData?.rideRequest || rideData,
-      timestamp: rideData?.timestamp || new Date().toISOString(),
-    };
+    const handleNewRide = useCallback((rideData: any, playSound = true) => {
+      const rideId = rideData?.rideRequest?.id || rideData?.id;
+      if (!rideId || seenRideIds.has(rideId)) return false;
+      seenRideIds.add(rideId);
 
-    setLatestRequest(notification);
-    setHasNewHireRequest(true);
-    setAvailableCount((prev) => prev + 1);
-  }, [userLocation]);
+      const notification: HireRequestNotification = {
+        id: rideId,
+        type: 'NEW_HIRE_REQUEST',
+        title: rideData?.title || 'New Hire Request! 🚗',
+        body: rideData?.body || `${rideData?.rideRequest?.pickupAddress || ''} → ${rideData?.rideRequest?.dropoffAddress || ''}`,
+        rideRequest: rideData?.rideRequest || rideData,
+        timestamp: rideData?.timestamp || new Date().toISOString(),
+      };
 
-  // ─── REST Polling Fallback (every 10 seconds) ────────────────
+      setLatestRequest(notification);
+      setHasNewHireRequest(true);
+      setAvailableCount((prev) => prev + 1);
+    }, [userLocation]);
+
+    if (playSound) {
+      triggerAlert();
+    }
+    return true;
+  }, [triggerAlert]);
+
+  // ─── REST Polling Fallback ──────────────────────────────────
   const pollAvailableRides = useCallback(async () => {
     if (!isOnline) return;
     try {
       const rides: any[] = await riderApi.getAvailableRides() as any;
       if (!Array.isArray(rides)) return;
 
-      setAvailableCount(rides.length);
+      const [lastViewedTime, lastClearedTime] = await Promise.all([
+        getLastViewedNotifTime(),
+        getLastClearedNotifTime(),
+      ]);
 
-      for (const ride of rides) {
-        if (!seenRideIds.has(ride.id)) {
-          handleNewRide({
-            rideRequest: ride,
-            title: '🚗 New Hire Request!',
-            body: `${ride.pickupAddress} → ${ride.dropoffAddress}`,
-            timestamp: ride.createdAt || new Date().toISOString(),
-          });
-        }
+      // Filter out cleared items
+      const validRides = rides.filter((r) => {
+        if (!lastClearedTime) return true;
+        const itemTime = r.createdAt ? new Date(r.createdAt).getTime() : Date.now();
+        return itemTime > lastClearedTime;
+      });
+
+      // Unread badge count: items created AFTER lastViewedTime
+      const unreadRides = validRides.filter((r) => {
+        if (!lastViewedTime) return true;
+        const itemTime = r.createdAt ? new Date(r.createdAt).getTime() : Date.now();
+        return itemTime > lastViewedTime;
+      });
+
+      setAvailableCount(unreadRides.length);
+
+      let anyNew = false;
+      for (const ride of validRides) {
+        // Add to seen set, but suppress per-item sound inside loop
+        const added = handleNewRide({
+          rideRequest: ride,
+          title: '🚗 New Hire Request!',
+          body: `${ride.pickupAddress} → ${ride.dropoffAddress}`,
+          timestamp: ride.createdAt || new Date().toISOString(),
+        }, false);
+        if (added) anyNew = true;
+      }
+
+      // Play sound and vibrate EXACTLY ONCE for the newly discovered ride batch
+      if (anyNew) {
+        triggerAlert();
       }
     } catch (err) {
-      // Silent — polling is a background operation
+      // Silent background polling catch
     }
-  }, [isOnline, handleNewRide]);
+  }, [isOnline, handleNewRide, triggerAlert]);
 
   const refresh = useCallback(() => {
     pollAvailableRides();
@@ -188,7 +233,7 @@ export function useHireNotification(isOnline: boolean = true, userLocation?: Loc
   const startPolling = useCallback(() => {
     if (pollingIntervalRef.current) return; // already polling
     pollAvailableRides(); // immediate first poll
-    pollingIntervalRef.current = setInterval(pollAvailableRides, 10_000);
+    pollingIntervalRef.current = setInterval(pollAvailableRides, 2_500);
   }, [pollAvailableRides]);
 
   useEffect(() => {
@@ -227,6 +272,7 @@ export function useHireNotification(isOnline: boolean = true, userLocation?: Loc
     hasNewHireRequest,
     latestRequest,
     availableCount,
+    soundTrigger,
     dismissNotification,
     refresh,
     socketConnected,
