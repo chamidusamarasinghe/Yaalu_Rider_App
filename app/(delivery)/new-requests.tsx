@@ -13,7 +13,8 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tw from '@/lib/tw';
-import riderApi from '@/services/api';
+import riderApi, { safeStorage } from '@/services/api';
+import { checkAndGetRiderLocation } from '@/lib/location';
 
 export default function NewRequestsScreen() {
   const router = useRouter();
@@ -72,9 +73,45 @@ export default function NewRequestsScreen() {
           }
         } as any);
       } else {
+        const locRes = await checkAndGetRiderLocation().catch(() => ({ success: false, coords: undefined }));
+        const riderLat = locRes.coords?.latitude ?? 6.8412;
+        const riderLng = locRes.coords?.longitude ?? 79.9654;
+
+        const activeObj = {
+          id: acceptedItem.id || orderId,
+          orderNumber: acceptedItem.orderNumber || `RID-${orderId.slice(0, 6).toUpperCase()}`,
+          pickupAddress: acceptedItem.pickupAddress || 'Pickup Location',
+          dropoffAddress: acceptedItem.dropoffAddress || 'Dropoff Location',
+          pickupLat: acceptedItem.pickupLat ?? acceptedItem.latitude ?? 6.9271,
+          pickupLng: acceptedItem.pickupLng ?? acceptedItem.longitude ?? 79.8612,
+          dropoffLat: acceptedItem.dropoffLat ?? 6.8412,
+          dropoffLng: acceptedItem.dropoffLng ?? 79.9654,
+          riderLat,
+          riderLng,
+          fare: fare,
+          amount: `LKR ${fare.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`,
+          status: 'ACCEPTED',
+        };
+
+        await safeStorage.setItem('active_ongoing_ride', JSON.stringify(activeObj));
+
         // For Standard rides, we ACCEPT the order immediately
         await riderApi.acceptOrder(orderId);
-        router.push('/navigate-pickup');
+        router.push({
+          pathname: '/navigate-pickup',
+          params: {
+            orderId: activeObj.id,
+            pickup: activeObj.pickupAddress,
+            dropoff: activeObj.dropoffAddress,
+            pickupLat: String(activeObj.pickupLat),
+            pickupLng: String(activeObj.pickupLng),
+            dropoffLat: String(activeObj.dropoffLat),
+            dropoffLng: String(activeObj.dropoffLng),
+            riderLat: String(activeObj.riderLat),
+            riderLng: String(activeObj.riderLng),
+            fare: fare.toString(),
+          },
+        } as any);
         fetchOrders();
       }
     } catch (e: any) {

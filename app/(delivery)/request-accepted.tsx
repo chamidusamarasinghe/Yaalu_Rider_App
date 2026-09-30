@@ -11,6 +11,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tw from '@/lib/tw';
+import BottomNav from '@/components/BottomNav';
 
 export default function RequestAcceptedScreen() {
   const router = useRouter();
@@ -19,7 +20,7 @@ export default function RequestAcceptedScreen() {
     <SafeAreaView style={tw`flex-1 bg-[#FFC72C]`} edges={['top', 'bottom']}>
       <RNStatusBar barStyle="dark-content" backgroundColor="#FFC72C" />
 
-      <View style={tw`flex-1 bg-slate-800`}>
+      <View style={tw`flex-1 bg-slate-800 relative`}>
 
       {/* Top Header Bar */}
       <View style={tw`bg-[#FFC72C] h-14 px-4 flex-row items-center justify-between shadow-sm`}>
@@ -36,7 +37,7 @@ export default function RequestAcceptedScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={tw`p-4 pb-8`}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={tw`p-4 pb-24`}>
         {/* Main White Card Modal */}
         <View style={tw`bg-white rounded-3xl p-5 shadow-2xl items-center`}>
           {/* Green Confetti Checkmark Circle */}
@@ -137,7 +138,7 @@ export default function RequestAcceptedScreen() {
           {/* Secondary Button */}
           <TouchableOpacity
             activeOpacity={0.8}
-            onPress={() => router.push('/delivery/step1')}
+            onPress={() => router.push('/delivery/status' as any)}
             style={tw`w-full bg-white border-2 border-slate-200 rounded-2xl py-3.5 flex-row items-center justify-center gap-2`}>
             <Feather name="menu" size={18} color="#0B1044" />
             <Text style={tw`text-[#0B1044] font-extrabold text-sm`}>View Order Details</Text>
@@ -152,6 +153,8 @@ export default function RequestAcceptedScreen() {
           </Text>
         </View>
       </ScrollView>
+
+      <BottomNav active="dashboard" />
       </View>
     </SafeAreaView>
   );
