@@ -169,15 +169,39 @@ export default function InteractiveMap({
         });
 
         if (${showRoute} && olCoords.length >= 2) {
+          var startM = markersData[0];
+          var endM = markersData[markersData.length - 1];
+          var osrmUrl = 'https://router.project-osrm.org/route/v1/driving/' + startM.longitude + ',' + startM.latitude + ';' + endM.longitude + ',' + endM.latitude + '?overview=full&geometries=geojson';
+
+          fetch(osrmUrl)
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+              if (data && data.routes && data.routes.length > 0 && data.routes[0].geometry && data.routes[0].geometry.coordinates) {
+                var roadCoords = data.routes[0].geometry.coordinates.map(function(pt) {
+                  return ol.proj.fromLonLat([pt[0], pt[1]]);
+                });
+                drawRoutePolyline(roadCoords);
+              } else {
+                drawRoutePolyline(olCoords);
+              }
+            })
+            .catch(function() {
+              drawRoutePolyline(olCoords);
+            });
+        } else if (olCoords.length === 1) {
+          map.getView().setCenter(olCoords[0]);
+          map.getView().setZoom(${zoom});
+        }
+
+        function drawRoutePolyline(coords) {
           var routeFeature = new ol.Feature({
-            geometry: new ol.geom.LineString(olCoords)
+            geometry: new ol.geom.LineString(coords)
           });
 
           var routeStyle = new ol.style.Style({
             stroke: new ol.style.Stroke({
-              color: '#0B1044',
-              width: 5,
-              lineDash: [8, 8]
+              color: '#2563EB',
+              width: 5
             })
           });
 
@@ -195,9 +219,6 @@ export default function InteractiveMap({
           try {
             map.getView().fit(vectorSource.getExtent(), { padding: [45, 45, 45, 45], maxZoom: 16 });
           } catch(e) {}
-        } else if (olCoords.length === 1) {
-          map.getView().setCenter(olCoords[0]);
-          map.getView().setZoom(${zoom});
         }
 
         if (${interactivePicker}) {
