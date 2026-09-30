@@ -15,6 +15,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Vibration } from 'react-native';
 import { getBaseUrl, getToken } from '@/services/api';
 import riderApi from '@/services/api';
+import { calculateDistance, LocationCoords } from '@/lib/location';
 import {
   getLastViewedNotifTime,
   getLastClearedNotifTime,
@@ -33,6 +34,8 @@ export interface HireRequestNotification {
     selectedVehicleType?: string;
     finalFare?: number;
     createdAt?: string;
+    pickupLat?: number;
+    pickupLng?: number;
   };
   timestamp: string;
 }
@@ -57,7 +60,7 @@ interface UseHireNotificationReturn {
 // Track seen ride IDs to avoid duplicate notifications
 const seenRideIds = new Set<string>();
 
-export function useHireNotification(isOnline: boolean = true): UseHireNotificationReturn {
+export function useHireNotification(isOnline: boolean = true, userLocation?: LocationCoords | null): UseHireNotificationReturn {
   const [hasNewHireRequest, setHasNewHireRequest] = useState(false);
   const [latestRequest, setLatestRequest] = useState<HireRequestNotification | null>(null);
   const [availableCount, setAvailableCount] = useState(0);
@@ -73,27 +76,46 @@ export function useHireNotification(isOnline: boolean = true): UseHireNotificati
     setLatestRequest(null);
   }, []);
 
-  const triggerAlert = useCallback(() => {
-    Vibration.vibrate([0, 500, 200, 500, 200, 500]);
-    setSoundTrigger(Date.now());
-  }, []);
+  const handleNewRide = useCallback((rideData: any) => {
+    const pickupLat = rideData?.rideRequest?.pickupLat;
+    const pickupLng = rideData?.rideRequest?.pickupLng;
 
-  const handleNewRide = useCallback((rideData: any, playSound = true) => {
-    const rideId = rideData?.rideRequest?.id || rideData?.id;
-    if (!rideId || seenRideIds.has(rideId)) return false;
-    seenRideIds.add(rideId);
+    // Filter out requests that are more than 10km away (DISABLED FOR TESTING)
+    // if (userLocation && pickupLat !== undefined && pickupLng !== undefined) {
+    //   const distance = calculateDistance(
+    //     userLocation.latitude,
+    //     userLocation.longitude,
+    //     pickupLat,
+    //     pickupLng
+    //   );
+    //   if (distance > 1000) { 
+    //     return; 
+    //   }
+    // }
 
-    const notification: HireRequestNotification = {
-      id: rideId,
-      type: 'NEW_HIRE_REQUEST',
-      title: rideData?.title || 'New Hire Request! 🚗',
-      body: rideData?.body || `${rideData?.rideRequest?.pickupAddress || ''} → ${rideData?.rideRequest?.dropoffAddress || ''}`,
-      rideRequest: rideData?.rideRequest || rideData,
-      timestamp: rideData?.timestamp || new Date().toISOString(),
-    };
+    const triggerAlert = useCallback(() => {
+      Vibration.vibrate([0, 500, 200, 500, 200, 500]);
+      setSoundTrigger(Date.now());
+    }, []);
 
-    setLatestRequest(notification);
-    setHasNewHireRequest(true);
+    const handleNewRide = useCallback((rideData: any, playSound = true) => {
+      const rideId = rideData?.rideRequest?.id || rideData?.id;
+      if (!rideId || seenRideIds.has(rideId)) return false;
+      seenRideIds.add(rideId);
+
+      const notification: HireRequestNotification = {
+        id: rideId,
+        type: 'NEW_HIRE_REQUEST',
+        title: rideData?.title || 'New Hire Request! 🚗',
+        body: rideData?.body || `${rideData?.rideRequest?.pickupAddress || ''} → ${rideData?.rideRequest?.dropoffAddress || ''}`,
+        rideRequest: rideData?.rideRequest || rideData,
+        timestamp: rideData?.timestamp || new Date().toISOString(),
+      };
+
+      setLatestRequest(notification);
+      setHasNewHireRequest(true);
+      setAvailableCount((prev) => prev + 1);
+    }, [userLocation]);
 
     if (playSound) {
       triggerAlert();

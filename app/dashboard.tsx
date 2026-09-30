@@ -101,7 +101,7 @@ export default function RiderDashboardScreen() {
     dismissNotification,
     refresh: refreshNotifications,
     socketConnected,
-  } = useHireNotification(isOnline);
+  } = useHireNotification(isOnline, userLocation);
 
   // Slide in banner & pulse animation when new hire request arrives
   useEffect(() => {

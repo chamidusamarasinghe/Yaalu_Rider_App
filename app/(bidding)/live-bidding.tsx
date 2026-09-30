@@ -22,6 +22,7 @@ export default function LiveBiddingScreen() {
   const [maxBid, setMaxBid] = useState(
     params.maxBid ? Number(params.maxBid) : 1200
   );
+  const [driversCount, setDriversCount] = useState(1);
   const [lowestBid, setLowestBid] = useState(980);
 
   useEffect(() => {
@@ -39,6 +40,33 @@ export default function LiveBiddingScreen() {
     return () => clearInterval(timer);
   }, [secondsLeft]);
 
+  useEffect(() => {
+    const rideRequestId = params.rideRequestId as string;
+    if (!rideRequestId) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const { riderApi } = await import('@/services/api');
+        const details = await riderApi.getRideDetails(rideRequestId);
+        
+        if (details.bids && Array.isArray(details.bids) && details.bids.length > 0) {
+          setDriversCount(details.bids.length);
+          const sorted = [...details.bids].sort((a, b) => a.proposedFare - b.proposedFare);
+          setLowestBid(sorted[0].proposedFare);
+        }
+
+        if (details.status === 'ACCEPTED') {
+          clearInterval(interval);
+          Alert.alert('Bidding Closed', 'The bidding period has ended.', [
+            { text: 'OK', onPress: () => router.push('/new-requests' as any) },
+          ]);
+        }
+      } catch (e) {}
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [params.rideRequestId]);
+
   const mm = Math.floor(secondsLeft / 60).toString().padStart(2, '0');
   const ss = (secondsLeft % 60).toString().padStart(2, '0');
 
@@ -50,6 +78,7 @@ export default function LiveBiddingScreen() {
     router.push({
       pathname: '/place-bid',
       params: {
+        rideRequestId: params.rideRequestId as string,
         startingPrice: startingPrice.toString(),
         minBid: minBid.toString(),
         maxBid: maxBid.toString(),
@@ -62,6 +91,7 @@ export default function LiveBiddingScreen() {
     router.push({
       pathname: '/live-bids',
       params: {
+        rideRequestId: params.rideRequestId as string,
         startingPrice: startingPrice.toString(),
         minBid: minBid.toString(),
         maxBid: maxBid.toString(),
@@ -148,7 +178,7 @@ export default function LiveBiddingScreen() {
               </View>
             </View>
             <View style={tw`bg-white border border-emerald-200 rounded-xl px-2.5 py-1.5 items-center`}>
-              <Text style={tw`text-sm font-extrabold text-slate-900`}>4 Drivers</Text>
+              <Text style={tw`text-sm font-extrabold text-slate-900`}>{driversCount} Drivers</Text>
               <Text style={tw`text-[9px] text-emerald-600 font-bold uppercase`}>Bidding</Text>
             </View>
           </View>
