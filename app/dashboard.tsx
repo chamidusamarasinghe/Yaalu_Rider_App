@@ -370,8 +370,14 @@ export default function RiderDashboardScreen() {
             />
           </View>
           <View>
-            <Text style={tw`text-xs font-bold text-[#0B1044]/70`}>Hello ðŸ‘‹</Text>
-            <Text style={tw`text-base font-black text-[#0B1044]`}>{rider?.firstName || (rider?.fullName ? rider.fullName.split(' ')[0] : '') || rider?.fullName || 'Rider Partner'}</Text>
+            <Text style={tw`text-xs font-bold text-[#0B1044]/70`}>Hello 👋</Text>
+            <Text style={tw`text-base font-black text-[#0B1044]`}>
+              {(rider?.firstName && rider.firstName.toLowerCase() !== 'merchant')
+                ? rider.firstName
+                : (rider?.fullName && rider.fullName.toLowerCase() !== 'merchant')
+                  ? rider.fullName.split(' ')[0]
+                  : 'Rider Partner'}
+            </Text>
           </View>
         </TouchableOpacity>
 
@@ -433,8 +439,17 @@ export default function RiderDashboardScreen() {
             >
               {/* Left: icon + text */}
               <View style={tw`flex-row items-center gap-3 flex-1 mr-2`}>
-                <View style={tw`w-11 h-11 rounded-xl bg-[#FFC72C] items-center justify-center`}>
-                  <Ionicons name="car" size={22} color="#0B1044" />
+                <View style={[
+                  tw`w-11 h-11 rounded-xl items-center justify-center`,
+                  latestRequest?.rideRequest?.rideType?.toUpperCase() === 'DELIVERY'
+                    ? tw`bg-blue-500`
+                    : tw`bg-[#FFC72C]`,
+                ]}>
+                  <Ionicons
+                    name={latestRequest?.rideRequest?.rideType?.toUpperCase() === 'DELIVERY' ? 'cube' : 'car'}
+                    size={22}
+                    color="#fff"
+                  />
                 </View>
                 <View style={tw`flex-1`}>
                   <Text style={tw`text-sm font-black text-[#FFC72C]`}>
@@ -444,7 +459,9 @@ export default function RiderDashboardScreen() {
                     {latestRequest?.body || 'Requests right now — tap to view'}
                   </Text>
                   <Text style={tw`text-[10px] text-[#FFC72C]/60 font-bold mt-0.5`}>
-                    Requests right now ⚡
+                    {latestRequest?.rideRequest?.rideType?.toUpperCase() === 'DELIVERY'
+                      ? 'Delivery job available ⚡'
+                      : 'Requests right now ⚡'}
                   </Text>
                 </View>
               </View>
@@ -567,7 +584,11 @@ export default function RiderDashboardScreen() {
                     id: 'rider-home-pos',
                     latitude: userLocation.latitude,
                     longitude: userLocation.longitude,
-                    title: rider?.firstName || rider?.fullName || 'Wenura',
+                    title: (rider?.firstName && rider.firstName.toLowerCase() !== 'merchant')
+                      ? rider.firstName
+                      : (rider?.fullName && rider.fullName.toLowerCase() !== 'merchant')
+                        ? rider.fullName
+                        : 'Rider',
                     type: 'driver',
                   },
                   {

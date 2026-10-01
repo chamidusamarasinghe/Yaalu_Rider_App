@@ -1,11 +1,11 @@
 /**
  * useHireNotification
  * -------------------
- * Real-time hire request notification hook for the Yaalu Rider App.
+ * Real-time hire/delivery request notification hook for the Yaalu Rider App.
  *
  * Strategy:
  *   1. Primary: Socket.io WebSocket connection to /rides namespace
- *   2. Fallback: 10-second polling via REST API (getAvailableRides)
+ *   2. Fallback: 2.5-second polling via REST API (getAvailableRides)
  *
  * Usage:
  *   const { hasNewHireRequest, latestRequest, dismissNotification } = useHireNotification();
@@ -41,7 +41,7 @@ export interface HireRequestNotification {
 }
 
 interface UseHireNotificationReturn {
-  /** true when there's an unread hire request */
+  /** true when there's an unread hire/delivery request */
   hasNewHireRequest: boolean;
   /** the most recent unread hire notification */
   latestRequest: HireRequestNotification | null;
@@ -60,7 +60,10 @@ interface UseHireNotificationReturn {
 // Track seen ride IDs to avoid duplicate notifications
 const seenRideIds = new Set<string>();
 
-export function useHireNotification(isOnline: boolean = true, userLocation?: LocationCoords | null): UseHireNotificationReturn {
+export function useHireNotification(
+  isOnline: boolean = true,
+  userLocation?: LocationCoords | null,
+): UseHireNotificationReturn {
   const [hasNewHireRequest, setHasNewHireRequest] = useState(false);
   const [latestRequest, setLatestRequest] = useState<HireRequestNotification | null>(null);
   const [availableCount, setAvailableCount] = useState(0);
@@ -76,38 +79,30 @@ export function useHireNotification(isOnline: boolean = true, userLocation?: Loc
     setLatestRequest(null);
   }, []);
 
-  const handleNewRide = useCallback((rideData: any) => {
-    const pickupLat = rideData?.rideRequest?.pickupLat;
-    const pickupLng = rideData?.rideRequest?.pickupLng;
+  // ─── Trigger vibration + sound chime ─────────────────────────
+  const triggerAlert = useCallback(() => {
+    Vibration.vibrate([0, 500, 200, 500, 200, 500]);
+    setSoundTrigger(Date.now());
+  }, []);
 
-    // Filter out requests that are more than 10km away (DISABLED FOR TESTING)
-    // if (userLocation && pickupLat !== undefined && pickupLng !== undefined) {
-    //   const distance = calculateDistance(
-    //     userLocation.latitude,
-    //     userLocation.longitude,
-    //     pickupLat,
-    //     pickupLng
-    //   );
-    //   if (distance > 1000) { 
-    //     return; 
-    //   }
-    // }
-
-    const triggerAlert = useCallback(() => {
-      Vibration.vibrate([0, 500, 200, 500, 200, 500]);
-      setSoundTrigger(Date.now());
-    }, []);
-
-    const handleNewRide = useCallback((rideData: any, playSound = true) => {
+  // ─── Handle a single new ride/delivery notification ──────────
+  const handleNewRide = useCallback(
+    (rideData: any, playSound = true): boolean => {
       const rideId = rideData?.rideRequest?.id || rideData?.id;
       if (!rideId || seenRideIds.has(rideId)) return false;
       seenRideIds.add(rideId);
 
+      const isDelivery = (rideData?.rideRequest?.rideType || '').toUpperCase() === 'DELIVERY';
+
       const notification: HireRequestNotification = {
         id: rideId,
         type: 'NEW_HIRE_REQUEST',
-        title: rideData?.title || 'New Hire Request! 🚗',
-        body: rideData?.body || `${rideData?.rideRequest?.pickupAddress || ''} → ${rideData?.rideRequest?.dropoffAddress || ''}`,
+        title: isDelivery
+          ? rideData?.title || '📦 New Delivery Request!'
+          : rideData?.title || '🚗 New Hire Request!',
+        body:
+          rideData?.body ||
+          `${rideData?.rideRequest?.pickupAddress || ''} → ${rideData?.rideRequest?.dropoffAddress || ''}`,
         rideRequest: rideData?.rideRequest || rideData,
         timestamp: rideData?.timestamp || new Date().toISOString(),
       };
@@ -115,19 +110,20 @@ export function useHireNotification(isOnline: boolean = true, userLocation?: Loc
       setLatestRequest(notification);
       setHasNewHireRequest(true);
       setAvailableCount((prev) => prev + 1);
-    }, [userLocation]);
 
-    if (playSound) {
-      triggerAlert();
-    }
-    return true;
-  }, [triggerAlert]);
+      if (playSound) {
+        triggerAlert();
+      }
+      return true;
+    },
+    [triggerAlert],
+  );
 
   // ─── REST Polling Fallback ──────────────────────────────────
   const pollAvailableRides = useCallback(async () => {
     if (!isOnline) return;
     try {
-      const rides: any[] = await riderApi.getAvailableRides() as any;
+      const rides: any[] = (await riderApi.getAvailableRides()) as any;
       if (!Array.isArray(rides)) return;
 
       const [lastViewedTime, lastClearedTime] = await Promise.all([
@@ -153,13 +149,18 @@ export function useHireNotification(isOnline: boolean = true, userLocation?: Loc
 
       let anyNew = false;
       for (const ride of validRides) {
-        // Add to seen set, but suppress per-item sound inside loop
-        const added = handleNewRide({
-          rideRequest: ride,
-          title: '🚗 New Hire Request!',
-          body: `${ride.pickupAddress} → ${ride.dropoffAddress}`,
-          timestamp: ride.createdAt || new Date().toISOString(),
-        }, false);
+        const added = handleNewRide(
+          {
+            rideRequest: ride,
+            title:
+              (ride.rideType || '').toUpperCase() === 'DELIVERY'
+                ? '📦 New Delivery Request!'
+                : '🚗 New Hire Request!',
+            body: `${ride.pickupAddress} → ${ride.dropoffAddress}`,
+            timestamp: ride.createdAt || new Date().toISOString(),
+          },
+          false, // suppress per-item sound inside loop
+        );
         if (added) anyNew = true;
       }
 
@@ -181,7 +182,6 @@ export function useHireNotification(isOnline: boolean = true, userLocation?: Loc
     if (socketRef.current || socketFailedRef.current) return;
 
     try {
-      // Dynamic import to avoid crashing if not installed yet
       const { io } = await import('socket.io-client');
       const baseUrl = getBaseUrl();
       const token = await getToken();
@@ -207,7 +207,6 @@ export function useHireNotification(isOnline: boolean = true, userLocation?: Loc
 
       socket.on('disconnect', () => {
         setSocketConnected(false);
-        // Restart polling as fallback
         startPolling();
       });
 
@@ -217,28 +216,26 @@ export function useHireNotification(isOnline: boolean = true, userLocation?: Loc
         startPolling();
       });
 
-      // 🔔 Main event: new hire request from customer
+      // 🔔 New hire OR delivery request broadcast from backend
       socket.on('new_hire_request', (data: any) => {
-        handleNewRide(data);
+        handleNewRide(data, true);
       });
 
       socketRef.current = socket;
     } catch (err) {
-      // socket.io-client not available or network error — fall back to polling
       socketFailedRef.current = true;
       startPolling();
     }
   }, [handleNewRide]);
 
   const startPolling = useCallback(() => {
-    if (pollingIntervalRef.current) return; // already polling
-    pollAvailableRides(); // immediate first poll
+    if (pollingIntervalRef.current) return;
+    pollAvailableRides();
     pollingIntervalRef.current = setInterval(pollAvailableRides, 2_500);
   }, [pollAvailableRides]);
 
   useEffect(() => {
     if (!isOnline) {
-      // Clean up when rider goes offline
       if (socketRef.current) {
         socketRef.current.disconnect();
         socketRef.current = null;
@@ -253,7 +250,6 @@ export function useHireNotification(isOnline: boolean = true, userLocation?: Loc
     }
 
     connectSocket();
-    // Always start polling as a safety net (socket disables it on connect)
     startPolling();
 
     return () => {

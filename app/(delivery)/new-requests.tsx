@@ -121,10 +121,29 @@ export default function NewRequestsScreen() {
                 {/* Header Badge */}
                 <View style={tw`flex-row justify-between items-center pb-3 border-b border-slate-100`}>
                   <View style={tw`flex-row items-center gap-2`}>
-                    <View style={tw`w-8 h-8 rounded-xl bg-amber-100 items-center justify-center`}>
-                      <Ionicons name="flash" size={16} color="#D97706" />
+                    <View style={[
+                      tw`w-8 h-8 rounded-xl items-center justify-center`,
+                      (item.rideType || '').toUpperCase() === 'DELIVERY'
+                        ? tw`bg-blue-100`
+                        : tw`bg-amber-100`,
+                    ]}>
+                      <Ionicons
+                        name={(item.rideType || '').toUpperCase() === 'DELIVERY' ? 'cube-outline' : 'flash'}
+                        size={16}
+                        color={(item.rideType || '').toUpperCase() === 'DELIVERY' ? '#2563EB' : '#D97706'}
+                      />
                     </View>
-                    <Text style={tw`text-sm font-black text-[#0B1044]`}>{item.orderNumber}</Text>
+                    <View>
+                      <Text style={tw`text-sm font-black text-[#0B1044]`}>{item.orderNumber}</Text>
+                      <Text style={[
+                        tw`text-[10px] font-black uppercase`,
+                        (item.rideType || '').toUpperCase() === 'DELIVERY'
+                          ? tw`text-blue-600`
+                          : tw`text-amber-600`,
+                      ]}>
+                        {(item.rideType || '').toUpperCase() === 'DELIVERY' ? '📦 Delivery' : '🚗 Hire'}
+                      </Text>
+                    </View>
                   </View>
                   <Text style={tw`text-lg font-black text-emerald-600`}>LKR {item.fare}</Text>
                 </View>
@@ -132,9 +151,11 @@ export default function NewRequestsScreen() {
                 {/* Pickup / Dropoff */}
                 <View style={tw`gap-3`}>
                   <View style={tw`flex-row items-center gap-3`}>
-                    <View style={tw`w-3 h-3 rounded-full bg-emerald-500` } />
+                    <View style={tw`w-3 h-3 rounded-full bg-emerald-500`} />
                     <View style={tw`flex-1`}>
-                      <Text style={tw`text-[10px] font-bold text-slate-400 uppercase`}>PICKUP</Text>
+                      <Text style={tw`text-[10px] font-bold text-slate-400 uppercase`}>
+                        {(item.rideType || '').toUpperCase() === 'DELIVERY' ? 'SHOP (PICKUP)' : 'PICKUP'}
+                      </Text>
                       <Text style={tw`text-xs font-bold text-slate-900`}>{item.pickupAddress}</Text>
                     </View>
                   </View>
@@ -142,7 +163,9 @@ export default function NewRequestsScreen() {
                   <View style={tw`flex-row items-center gap-3`}>
                     <View style={tw`w-3 h-3 rounded-full bg-red-500`} />
                     <View style={tw`flex-1`}>
-                      <Text style={tw`text-[10px] font-bold text-slate-400 uppercase`}>DROPOFF</Text>
+                      <Text style={tw`text-[10px] font-bold text-slate-400 uppercase`}>
+                        {(item.rideType || '').toUpperCase() === 'DELIVERY' ? 'CUSTOMER (DROPOFF)' : 'DROPOFF'}
+                      </Text>
                       <Text style={tw`text-xs font-bold text-slate-900`}>{item.dropoffAddress}</Text>
                     </View>
                   </View>
@@ -153,15 +176,34 @@ export default function NewRequestsScreen() {
                   activeOpacity={0.85}
                   disabled={acceptingId === item.id}
                   onPress={() => handleAcceptOrder(item.id, item.rideType)}
-                  style={tw`bg-[#0B1044] rounded-2xl py-3.5 items-center justify-center flex-row gap-2 shadow-sm`}>
+                  style={[
+                    tw`rounded-2xl py-3.5 items-center justify-center flex-row gap-2 shadow-sm`,
+                    (item.rideType || '').toUpperCase() === 'DELIVERY'
+                      ? tw`bg-blue-600`
+                      : tw`bg-[#0B1044]`,
+                  ]}>
                   {acceptingId === item.id ? (
                     <ActivityIndicator size="small" color="#FFC72C" />
                   ) : (
                     <>
                       <Text style={tw`text-white font-extrabold text-sm`}>
-                        {item.rideType?.includes('BID') ? 'View & Join Bid' : 'Accept Ride Now'}
+                        {item.rideType?.includes('BID') || item.rideType?.includes('BIDDING')
+                          ? 'View & Join Bid'
+                          : (item.rideType || '').toUpperCase() === 'DELIVERY'
+                          ? 'Accept Delivery'
+                          : 'Accept Hire Now'}
                       </Text>
-                      <Ionicons name={item.rideType?.includes('BID') ? 'hammer-outline' : 'checkmark-circle'} size={18} color="#FFC72C" />
+                      <Ionicons
+                        name={
+                          item.rideType?.includes('BID')
+                            ? 'hammer-outline'
+                            : (item.rideType || '').toUpperCase() === 'DELIVERY'
+                            ? 'cube-outline'
+                            : 'checkmark-circle'
+                        }
+                        size={18}
+                        color="#FFC72C"
+                      />
                     </>
                   )}
                 </TouchableOpacity>

@@ -66,7 +66,9 @@ export default function ProfileScreen() {
     ]);
   };
 
-  const fullName = rider?.fullName || `${rider?.firstName || ''} ${rider?.lastName || ''}`.trim() || rider?.user?.name || 'Rider';
+  const fullName = (rider?.fullName && rider.fullName.toLowerCase() !== 'merchant')
+    ? rider.fullName
+    : `${rider?.firstName || ''} ${rider?.lastName || ''}`.trim() || rider?.user?.name || 'Rider Partner';
   const riderId = rider?.id ? `#YL-${rider.id.slice(0, 6).toUpperCase()}` : '#YL-8921';
   const rating = rider?.rating ? Number(rider.rating).toFixed(1) : '5.0';
   const completedCount = rider?.deliveriesCompleted ?? 0;

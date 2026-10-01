@@ -126,23 +126,46 @@ export function formatRiderData(res: any, currentSaved?: any): any {
   const u = res?.user || {};
   const r = res?.rider || res?.riderProfile || {};
 
+  const cleanName = (val?: any): string => {
+    if (!val || typeof val !== 'string') return '';
+    const trimmed = val.trim();
+    if (trimmed.toLowerCase() === 'merchant') return '';
+    return trimmed;
+  };
+
   const getVal = (...keys: string[]): string => {
     for (const key of keys) {
-      if (r && r[key] !== undefined && r[key] !== null && r[key] !== '') return String(r[key]);
+      if (r && r[key] !== undefined && r[key] !== null && r[key] !== '') {
+        const c = cleanName(r[key]);
+        if (c || key !== 'fullName' && key !== 'firstName' && key !== 'lastName') return String(r[key]);
+      }
       if (r?.vehicle && r.vehicle[key] !== undefined && r.vehicle[key] !== null && r.vehicle[key] !== '') return String(r.vehicle[key]);
-      if (u && u[key] !== undefined && u[key] !== null && u[key] !== '') return String(u[key]);
+      if (u && u[key] !== undefined && u[key] !== null && u[key] !== '') {
+        const c = cleanName(u[key]);
+        if (c || key !== 'fullName' && key !== 'firstName' && key !== 'lastName') return String(u[key]);
+      }
       if (u?.vehicle && u.vehicle[key] !== undefined && u.vehicle[key] !== null && u.vehicle[key] !== '') return String(u.vehicle[key]);
-      if (res && res[key] !== undefined && res[key] !== null && res[key] !== '') return String(res[key]);
+      if (res && res[key] !== undefined && res[key] !== null && res[key] !== '') {
+        const c = cleanName(res[key]);
+        if (c || key !== 'fullName' && key !== 'firstName' && key !== 'lastName') return String(res[key]);
+      }
       if (res?.vehicle && res.vehicle[key] !== undefined && res.vehicle[key] !== null && res.vehicle[key] !== '') return String(res.vehicle[key]);
-      if (currentSaved && currentSaved[key] !== undefined && currentSaved[key] !== null && currentSaved[key] !== '') return String(currentSaved[key]);
+      if (currentSaved && currentSaved[key] !== undefined && currentSaved[key] !== null && currentSaved[key] !== '') {
+        const c = cleanName(currentSaved[key]);
+        if (c || key !== 'fullName' && key !== 'firstName' && key !== 'lastName') return String(currentSaved[key]);
+      }
       if (currentSaved?.vehicle && currentSaved.vehicle[key] !== undefined && currentSaved.vehicle[key] !== null && currentSaved.vehicle[key] !== '') return String(currentSaved.vehicle[key]);
     }
     return '';
   };
 
-  const fullName = getVal('fullName') || `${getVal('firstName')} ${getVal('lastName')}`.trim() || 'Rider Partner';
-  const firstName = getVal('firstName') || (fullName ? fullName.split(' ')[0] : 'Rider');
-  const lastName = getVal('lastName') || (fullName ? fullName.split(' ').slice(1).join(' ') : '');
+  const rawFullName = cleanName(getVal('fullName', 'name')) ||
+    cleanName(`${getVal('firstName')} ${getVal('lastName')}`.trim()) ||
+    'Rider Partner';
+  const fullName = rawFullName === 'Merchant' ? 'Rider Partner' : rawFullName;
+  const rawFirstName = cleanName(getVal('firstName')) || (fullName && fullName !== 'Rider Partner' ? fullName.split(' ')[0] : 'Rider');
+  const firstName = rawFirstName === 'Merchant' ? 'Rider' : rawFirstName;
+  const lastName = cleanName(getVal('lastName')) || (fullName && fullName !== 'Rider Partner' ? fullName.split(' ').slice(1).join(' ') : '');
   const email = getVal('email');
   const phone = getVal('phoneNumber', 'phone', 'mobile', 'contactNumber');
   const nicNumber = getVal('nicNumber', 'nic');
@@ -313,16 +336,19 @@ export const riderApi = {
       : { mobile: mobileOrEmail, password };
 
     try {
-      const res: any = await request('POST', '/auth/login', payload, false, 4000);
+      let res: any;
+      try {
+        res = await request('POST', '/riders/login', payload, false, 4000);
+      } catch (err) {
+        res = await request('POST', '/auth/login', payload, false, 4000);
+      }
+
       if (res?.accessToken || res?.token) {
         const token = res.accessToken || res.token;
         await saveToken(token);
 
-        const u = res.user || {};
-        const r = res.rider || res.riderProfile || {};
-
         const currentSaved = await getSavedRider();
-        const mergedRider = formatRiderData(res, { ...currentSaved, ...res, ...u, ...r });
+        const mergedRider = formatRiderData(res, currentSaved);
         await saveRider(mergedRider);
       }
       return res;
