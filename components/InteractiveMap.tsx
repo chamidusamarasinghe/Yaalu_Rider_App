@@ -168,26 +168,40 @@ export default function InteractiveMap({
           map.addOverlay(overlay);
         });
 
-        if (${showRoute} && olCoords.length >= 2) {
-          var startM = markersData[0];
-          var endM = markersData[markersData.length - 1];
-          var osrmUrl = 'https://router.project-osrm.org/route/v1/driving/' + startM.longitude + ',' + startM.latitude + ';' + endM.longitude + ',' + endM.latitude + '?overview=full&geometries=geojson';
+        if (${showRoute}) {
+          var pickupM = markersData.find(function(m) {
+            var t = (m.type || '').toLowerCase();
+            return t === 'pickup' || t === 'user' || t === 'current_location';
+          });
+          var dropM = markersData.find(function(m) {
+            var t = (m.type || '').toLowerCase();
+            return t === 'drop' || t === 'dropoff' || t === 'destination';
+          });
 
-          fetch(osrmUrl)
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-              if (data && data.routes && data.routes.length > 0 && data.routes[0].geometry && data.routes[0].geometry.coordinates) {
-                var roadCoords = data.routes[0].geometry.coordinates.map(function(pt) {
-                  return ol.proj.fromLonLat([pt[0], pt[1]]);
-                });
-                drawRoutePolyline(roadCoords);
-              } else {
-                drawRoutePolyline(olCoords);
-              }
-            })
-            .catch(function() {
-              drawRoutePolyline(olCoords);
-            });
+          if (!pickupM && markersData.length >= 2) pickupM = markersData[0];
+          if (!dropM && markersData.length >= 2) dropM = markersData[1];
+
+          if (pickupM && dropM) {
+            var osrmUrl = 'https://router.project-osrm.org/route/v1/driving/' + pickupM.longitude + ',' + pickupM.latitude + ';' + dropM.longitude + ',' + dropM.latitude + '?overview=full&geometries=geojson';
+
+            fetch(osrmUrl)
+              .then(function(res) { return res.json(); })
+              .then(function(data) {
+                if (data && data.routes && data.routes.length > 0 && data.routes[0].geometry && data.routes[0].geometry.coordinates) {
+                  var roadCoords = data.routes[0].geometry.coordinates.map(function(pt) {
+                    return ol.proj.fromLonLat([pt[0], pt[1]]);
+                  });
+                  drawRoutePolyline(roadCoords);
+                } else {
+                  var directCoords = [ol.proj.fromLonLat([pickupM.longitude, pickupM.latitude]), ol.proj.fromLonLat([dropM.longitude, dropM.latitude])];
+                  drawRoutePolyline(directCoords);
+                }
+              })
+              .catch(function() {
+                var directCoords = [ol.proj.fromLonLat([pickupM.longitude, pickupM.latitude]), ol.proj.fromLonLat([dropM.longitude, dropM.latitude])];
+                drawRoutePolyline(directCoords);
+              });
+          }
         } else if (olCoords.length === 1) {
           map.getView().setCenter(olCoords[0]);
           map.getView().setZoom(${zoom});
