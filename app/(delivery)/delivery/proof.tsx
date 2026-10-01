@@ -13,6 +13,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tw from '@/lib/tw';
 
+import riderApi, { safeStorage } from '@/services/api';
+import BottomNav from '@/components/BottomNav';
+
 export default function ProofOfDeliveryScreen() {
   const router = useRouter();
   const [photoUri, setPhotoUri] = useState<string | null>(null);
@@ -28,7 +31,13 @@ export default function ProofOfDeliveryScreen() {
     setPhotoUri('https://images.unsplash.com/photo-1580674684081-7617fbf3d745?q=80&w=400');
   };
 
-  const handleConfirmDelivery = () => {
+  const handleConfirmDelivery = async () => {
+    try {
+      await safeStorage.removeItem('active_ongoing_ride');
+      riderApi.setStatus('AVAILABLE').catch(() => {});
+    } catch (err) {
+      console.warn('Error clearing active ride:', err);
+    }
     router.push('/delivery/completed' as any);
   };
 
@@ -36,7 +45,7 @@ export default function ProofOfDeliveryScreen() {
     <SafeAreaView style={tw`flex-1 bg-[#FFC72C]`} edges={['top', 'bottom']}>
       <RNStatusBar barStyle="dark-content" backgroundColor="#FFC72C" />
 
-      <View style={tw`flex-1 bg-[#F8FAFC]`}>
+      <View style={tw`flex-1 bg-[#F8FAFC] relative`}>
 
       {/* Header Bar */}
       <View style={tw`bg-[#FFC72C] h-14 px-4 flex-row items-center justify-between shadow-sm`}>
@@ -47,7 +56,7 @@ export default function ProofOfDeliveryScreen() {
         <View style={tw`w-6`} />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={tw`p-4 pb-10`}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={tw`p-4 pb-24`}>
         {/* Main Content Card */}
         <View style={tw`bg-white rounded-3xl p-6 shadow-sm border border-slate-100 items-center`}>
           {/* Checkmark Circle with Confetti Accents */}
@@ -145,6 +154,8 @@ export default function ProofOfDeliveryScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <BottomNav active="dashboard" />
       </View>
     </SafeAreaView>
   );

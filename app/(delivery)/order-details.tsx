@@ -11,6 +11,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons, Feather, FontAwesome5 } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tw from '@/lib/tw';
+import BottomNav from '@/components/BottomNav';
 
 export default function OrderDetailsScreen() {
   const router = useRouter();
@@ -20,7 +21,7 @@ export default function OrderDetailsScreen() {
     <SafeAreaView style={tw`flex-1 bg-[#FFC72C]`} edges={['top', 'bottom']}>
       <RNStatusBar barStyle="dark-content" backgroundColor="#FFC72C" />
 
-      <View style={tw`flex-1 bg-[#F8FAFC]`}>
+      <View style={tw`flex-1 bg-[#F8FAFC] relative`}>
 
       {/* Header Bar */}
       <View style={tw`bg-[#FFC72C] h-16 px-4 flex-row items-center justify-between shadow-sm`}>
@@ -49,7 +50,7 @@ export default function OrderDetailsScreen() {
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={tw`p-4 pb-10 gap-4`}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={tw`p-4 pb-24 gap-4`}>
         {/* Header Order Card */}
         <View style={tw`bg-white rounded-3xl p-5 border border-slate-200 shadow-sm`}>
           <View style={tw`flex-row justify-between items-start`}>
@@ -222,6 +223,8 @@ export default function OrderDetailsScreen() {
           <Text style={tw`text-white font-extrabold text-base`}>Back</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      <BottomNav active="dashboard" />
       </View>
     </SafeAreaView>
   );
