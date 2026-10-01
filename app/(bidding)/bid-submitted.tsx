@@ -21,9 +21,19 @@ export default function BidSubmittedScreen() {
   const minBid = params.minBid ? Number(params.minBid) : 900;
   const maxBid = params.maxBid ? Number(params.maxBid) : 1200;
 
+  const [driversCount, setDriversCount] = useState(1);
+  const [myRank, setMyRank] = useState<number>(1);
+  const [riderId, setRiderId] = useState<string>('');
+
   const [secondsLeft, setSecondsLeft] = useState(
     params.secondsLeft ? Number(params.secondsLeft) : 105
   );
+
+  useEffect(() => {
+    import('@/services/api').then(m => m.getSavedRider()).then(r => {
+      if (r) setRiderId(r.id);
+    });
+  }, []);
 
   useEffect(() => {
     if (secondsLeft <= 0) return;
@@ -39,6 +49,45 @@ export default function BidSubmittedScreen() {
 
     return () => clearInterval(timer);
   }, [secondsLeft]);
+
+  useEffect(() => {
+    const rideRequestId = params.rideRequestId as string;
+    if (!rideRequestId) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const { riderApi } = await import('@/services/api');
+        const details = await riderApi.getRideDetails(rideRequestId);
+        
+        if (details.bids && Array.isArray(details.bids)) {
+          setDriversCount(details.bids.length);
+          
+          // Sort bids ascending
+          const sortedBids = [...details.bids].sort((a, b) => a.proposedFare - b.proposedFare);
+          
+          if (riderId) {
+            const myRankIndex = sortedBids.findIndex(b => b.driverId === riderId);
+            if (myRankIndex !== -1) {
+              setMyRank(myRankIndex + 1);
+            }
+          }
+        }
+
+        if (details.status === 'ACCEPTED') {
+          clearInterval(interval);
+          if (details.acceptedDriverId === riderId) {
+            router.push({ pathname: '/bid-won', params: { rideRequestId, bid: myBid.toString(), finalFare: details.finalFare?.toString() } } as any);
+          } else {
+            router.push('/bid-lost' as any);
+          }
+        }
+      } catch (e) {
+        // Silent polling fail
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [params.rideRequestId, riderId]);
 
   const mm = Math.floor(secondsLeft / 60).toString().padStart(2, '0');
   const ss = (secondsLeft % 60).toString().padStart(2, '0');
@@ -135,21 +184,26 @@ export default function BidSubmittedScreen() {
           </View>
 
           <View style={tw`items-center`}>
-            {/* Driver avatars */}
+            {/* Dynamic Driver avatars representation */}
             <View style={tw`flex-row mb-1`}>
-              {['#FFC72C', '#10B981', '#6366F1', '#F43F5E'].map((c, i) => (
+              {Array.from({ length: Math.min(driversCount, 4) }).map((_, i) => (
                 <View
                   key={i}
                   style={[
-                    tw`w-6 h-6 rounded-full border-2 border-white items-center justify-center`,
-                    { backgroundColor: c, marginLeft: i === 0 ? 0 : -6 },
+                    tw`w-6 h-6 rounded-full border-2 border-white items-center justify-center bg-slate-400`,
+                    { marginLeft: i === 0 ? 0 : -6 },
                   ]}
                 >
                   <Ionicons name="person" size={12} color="#fff" />
                 </View>
               ))}
+              {driversCount > 4 && (
+                <View style={[tw`w-6 h-6 rounded-full border-2 border-white items-center justify-center bg-slate-300`, { marginLeft: -6 }]}>
+                  <Text style={tw`text-[9px] font-bold text-slate-700`}>+{driversCount - 4}</Text>
+                </View>
+              )}
             </View>
-            <Text style={tw`text-sm font-extrabold text-slate-900`}>4 Drivers</Text>
+            <Text style={tw`text-sm font-extrabold text-slate-900`}>{driversCount} Drivers</Text>
             <Text style={tw`text-[10px] font-semibold text-slate-400`}>Currently Bidding</Text>
           </View>
         </View>
@@ -162,37 +216,39 @@ export default function BidSubmittedScreen() {
               <Text style={tw`text-[10px] font-black text-emerald-300`}>COMPETITIVE BID</Text>
             </View>
           </View>
-          <Text style={tw`text-3xl font-extrabold text-white mb-4`}>2nd Place</Text>
+          <Text style={tw`text-3xl font-extrabold text-white mb-4`}>
+            {myRank === 1 ? '1st Place' : myRank === 2 ? '2nd Place' : myRank === 3 ? '3rd Place' : `${myRank}th Place`}
+          </Text>
 
           {/* Podium Visual */}
           <View style={tw`flex-row items-end justify-center`}>
             {/* 2nd place */}
-            <View style={tw`items-center mr-2`}>
-              <View style={tw`w-11 h-11 rounded-full bg-[#FFC72C] border-4 border-[#FFC72C] items-center justify-center mb-2 shadow-lg`}>
-                <Ionicons name="person" size={20} color="#0B1044" />
+            <View style={[tw`items-center mr-2 opacity-50`, myRank === 2 && tw`opacity-100`]}>
+              <View style={[tw`w-11 h-11 rounded-full items-center justify-center mb-2 shadow-lg`, myRank === 2 ? tw`bg-emerald-500 border-4 border-emerald-400` : tw`bg-[#FFC72C] border-4 border-[#FFC72C]`]}>
+                <Ionicons name="person" size={20} color={myRank === 2 ? '#fff' : '#0B1044'} />
               </View>
-              <View style={tw`w-16 h-14 bg-[#FFC72C]/20 rounded-t-xl items-center justify-center border-2 border-[#FFC72C]`}>
-                <Text style={tw`text-[#FFC72C] font-extrabold text-xl`}>2</Text>
+              <View style={[tw`w-16 h-14 rounded-t-xl items-center justify-center border-2`, myRank === 2 ? tw`bg-emerald-500/20 border-emerald-500` : tw`bg-[#FFC72C]/20 border-[#FFC72C]`]}>
+                <Text style={[tw`font-extrabold text-xl`, myRank === 2 ? tw`text-emerald-500` : tw`text-[#FFC72C]`]}>2</Text>
               </View>
             </View>
 
             {/* 1st place - tallest */}
-            <View style={tw`items-center mx-2`}>
-              <View style={tw`w-11 h-11 rounded-full bg-slate-500 border-2 border-slate-400 items-center justify-center mb-2`}>
+            <View style={[tw`items-center mx-2 opacity-50`, myRank === 1 && tw`opacity-100`]}>
+              <View style={[tw`w-11 h-11 rounded-full items-center justify-center mb-2`, myRank === 1 ? tw`bg-emerald-500 border-4 border-emerald-400` : tw`bg-slate-500 border-2 border-slate-400`]}>
                 <Ionicons name="person" size={20} color="#fff" />
               </View>
-              <View style={tw`w-16 h-20 bg-slate-600 rounded-t-xl items-center justify-center`}>
+              <View style={[tw`w-16 h-20 rounded-t-xl items-center justify-center`, myRank === 1 ? tw`bg-emerald-600 border-2 border-emerald-500` : tw`bg-slate-600`]}>
                 <Text style={tw`text-white font-extrabold text-xl`}>1</Text>
               </View>
             </View>
 
             {/* 3rd place */}
-            <View style={tw`items-center ml-2`}>
-              <View style={tw`w-11 h-11 rounded-full bg-orange-400 border-2 border-orange-300 items-center justify-center mb-2`}>
+            <View style={[tw`items-center ml-2 opacity-50`, myRank === 3 && tw`opacity-100`]}>
+              <View style={[tw`w-11 h-11 rounded-full items-center justify-center mb-2`, myRank === 3 ? tw`bg-emerald-500 border-4 border-emerald-400` : tw`bg-orange-400 border-2 border-orange-300`]}>
                 <Ionicons name="person" size={20} color="#fff" />
               </View>
-              <View style={tw`w-16 h-10 bg-orange-500/20 rounded-t-xl items-center justify-center border border-orange-400`}>
-                <Text style={tw`text-orange-400 font-extrabold text-xl`}>3</Text>
+              <View style={[tw`w-16 h-10 rounded-t-xl items-center justify-center border`, myRank === 3 ? tw`bg-emerald-500/20 border-emerald-500` : tw`bg-orange-500/20 border-orange-400`]}>
+                <Text style={[tw`font-extrabold text-xl`, myRank === 3 ? tw`text-emerald-500` : tw`text-orange-400`]}>3</Text>
               </View>
             </View>
           </View>
@@ -217,22 +273,7 @@ export default function BidSubmittedScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Simulation / Navigation Options */}
-        <View style={tw`flex-row gap-2 mb-3`}>
-          <TouchableOpacity
-            onPress={() => router.push({ pathname: '/bid-ending-soon', params: { secondsLeft: '20', bid: myBid.toString() } } as any)}
-            style={tw`flex-1 py-2.5 rounded-xl bg-red-50 border border-red-200 items-center`}
-          >
-            <Text style={tw`text-xs font-black text-red-600`}>Ending Soon (20s)</Text>
-          </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() => router.push('/bid-won' as any)}
-            style={tw`flex-1 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 items-center`}
-          >
-            <Text style={tw`text-xs font-black text-emerald-700`}>Simulate Won 🎉</Text>
-          </TouchableOpacity>
-        </View>
 
         <Text style={tw`text-[11px] text-slate-400 text-center leading-5 px-4`}>
           Your bid remains live until the countdown ends. The lowest valid bid wins the ride.
